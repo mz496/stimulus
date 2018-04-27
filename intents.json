@@ -1,0 +1,83 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "me about my day",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": [
+                        "help"
+                    ]
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "CheckInIntent",
+                    "slots": [],
+                    "samples": []
+                },
+                {
+                    "name": "AddReminderIntent",
+                    "slots": [
+                        {
+                            "name": "reminderContent",
+                            "type": "AMAZON.EventType"
+                        }
+                    ],
+                    "samples": [
+                        "remember that I need to {reminderContent}",
+                        "remember I need to {reminderContent}",
+                        "remind me I need to {reminderContent}",
+                        "remind me that I need to {reminderContent}",
+                        "remember that I have {reminderContent}",
+                        "remember that I have to {reminderContent}",
+                        "remember I have to {reminderContent}",
+                        "remember to {reminderContent}",
+                        "remind me that I have to {reminderContent}",
+                        "remind me that I {reminderContent}",
+                        "remind me I have to {reminderContent}",
+                        "remind me to {reminderContent}"
+                    ]
+                },
+                {
+                    "name": "GetRemindersIntent",
+                    "slots": [],
+                    "samples": [
+                        "tell me the list of my reminders",
+                        "tell me the list of reminders",
+                        "tell me my reminders",
+                        "give me the list of reminders",
+                        "give me the list of my reminders",
+                        "list reminders",
+                        "give me a list of reminders",
+                        "give me a list of my reminders",
+                        "my list of reminders",
+                        "list my reminders"
+                    ]
+                },
+                {
+                    "name": "GetMainFocusIntent",
+                    "slots": [],
+                    "samples": [
+                        "what's my focus for today",
+                        "what's my focus",
+                        "what's my main focus",
+                        "what's my main focus for today",
+                        "my main focus",
+                        "today's main focus",
+                        "main focus for today",
+                        "main focus",
+                        "my main focus for today"
+                    ]
+                }
+            ],
+            "types": []
+        }
+    }
+}
