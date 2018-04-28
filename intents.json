@@ -1,7 +1,7 @@
 {
     "interactionModel": {
         "languageModel": {
-            "invocationName": "me about my day",
+            "invocationName": "stimulus",
             "intents": [
                 {
                     "name": "AMAZON.CancelIntent",
@@ -15,11 +15,6 @@
                 },
                 {
                     "name": "AMAZON.StopIntent",
-                    "samples": []
-                },
-                {
-                    "name": "CheckInIntent",
-                    "slots": [],
                     "samples": []
                 },
                 {
@@ -74,6 +69,47 @@
                         "main focus for today",
                         "main focus",
                         "my main focus for today"
+                    ]
+                },
+                {
+                    "name": "SetMorningRoutineIntent",
+                    "slots": [],
+                    "samples": [
+                        "edit the morning routine",
+                        "edit my morning routine",
+                        "set the morning routine",
+                        "change the morning routine",
+                        "set my morning routine",
+                        "change my morning routine"
+                    ]
+                },
+                {
+                    "name": "SetEveningRoutineIntent",
+                    "slots": [],
+                    "samples": [
+                        "edit the evening routine",
+                        "edit my evening routine",
+                        "set the evening routine",
+                        "change the evening routine",
+                        "set my evening routine",
+                        "change my evening routine"
+                    ]
+                },
+                {
+                    "name": "LaunchIntent",
+                    "slots": [],
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.YesIntent",
+                    "samples": []
+                },
+                {
+                    "name": "CheckinRefreshPrioritiesIntent",
+                    "slots": [],
+                    "samples": [
+                        "ask about my day",
+                        "ask me about my day"
                     ]
                 }
             ],

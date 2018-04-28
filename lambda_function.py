@@ -13,6 +13,7 @@ import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 
+
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('StimulusSkillDB')
 
@@ -97,6 +98,28 @@ def build_speechlet_response(title, output, reprompt_text, should_end_session):
         },
         'shouldEndSession': should_end_session
     }
+    
+def build_qna_response(title, output, reprompt_text, should_end_session, slot_to_elicit, updated_intent):
+    return {
+        'outputSpeech': {
+            'type': 'PlainText',
+            'text': output
+        },
+        'reprompt': {
+            'outputSpeech': {
+                'type': 'PlainText',
+                'text': reprompt_text
+            }
+        },
+        'shouldEndSession': should_end_session,
+        'directives': [
+            {
+                "type": "Dialog.ElicitSlot",
+                "slotToElicit": slot_to_elicit,
+                "updatedIntent": updated_intent
+            }
+        ]
+    }
 
 
 def build_response(session_attributes, speechlet_response):
@@ -108,6 +131,10 @@ def build_response(session_attributes, speechlet_response):
 
 
 # --------------- Functions that control the skill's behavior ------------------
+CHECKIN_REFRESH_PRIORITIES = "CHECKIN_REFRESH_PRIORITIES"
+CHECKIN_REFRESH_REMINDERS = "CHECKIN_REFRESH_REMINDERS"
+NO_QUESTION = ""
+state = {"question":NO_QUESTION}
 
 def store_thing():
     add_info("asdfasdf","STUFF")
@@ -152,57 +179,57 @@ def handle_session_end_request():
         card_title, speech_output, None, should_end_session))
 
 
-def create_favorite_color_attributes(favorite_color):
-    return {"favoriteColor": favorite_color}
+# def create_favorite_color_attributes(favorite_color):
+#     return {"favoriteColor": favorite_color}
 
 
-def set_color_in_session(intent, session):
-    """ Sets the color in the session and prepares the speech to reply to the
-    user.
-    """
+# def set_color_in_session(intent, session):
+#     """ Sets the color in the session and prepares the speech to reply to the
+#     user.
+#     """
 
-    card_title = intent['name']
-    session_attributes = {}
-    should_end_session = False
+#     card_title = intent['name']
+#     session_attributes = {}
+#     should_end_session = False
 
-    if 'Color' in intent['slots']:
-        favorite_color = intent['slots']['Color']['value']
-        session_attributes = create_favorite_color_attributes(favorite_color)
-        speech_output = "I now know your favorite color is " + \
-                        favorite_color + \
-                        ". You can ask me your favorite color by saying, " \
-                        "what's my favorite color?"
-        reprompt_text = "You can ask me your favorite color by saying, " \
-                        "what's my favorite color?"
-    else:
-        speech_output = "I'm not sure what your favorite color is. " \
-                        "Please try again."
-        reprompt_text = "I'm not sure what your favorite color is. " \
-                        "You can tell me your favorite color by saying, " \
-                        "my favorite color is red."
-    return build_response(session_attributes, build_speechlet_response(
-        card_title, speech_output, reprompt_text, should_end_session))
+#     if 'Color' in intent['slots']:
+#         favorite_color = intent['slots']['Color']['value']
+#         session_attributes = create_favorite_color_attributes(favorite_color)
+#         speech_output = "I now know your favorite color is " + \
+#                         favorite_color + \
+#                         ". You can ask me your favorite color by saying, " \
+#                         "what's my favorite color?"
+#         reprompt_text = "You can ask me your favorite color by saying, " \
+#                         "what's my favorite color?"
+#     else:
+#         speech_output = "I'm not sure what your favorite color is. " \
+#                         "Please try again."
+#         reprompt_text = "I'm not sure what your favorite color is. " \
+#                         "You can tell me your favorite color by saying, " \
+#                         "my favorite color is red."
+#     return build_response(session_attributes, build_speechlet_response(
+#         card_title, speech_output, reprompt_text, should_end_session))
 
 
-def get_color_from_session(intent, session):
-    session_attributes = {}
-    reprompt_text = None
+# def get_color_from_session(intent, session):
+#     session_attributes = {}
+#     reprompt_text = None
 
-    if session.get('attributes', {}) and "favoriteColor" in session.get('attributes', {}):
-        favorite_color = session['attributes']['favoriteColor']
-        speech_output = "Your favorite color is " + favorite_color + \
-                        ". Goodbye."
-        should_end_session = True
-    else:
-        speech_output = "I'm not sure what your favorite color is. " \
-                        "You can say, my favorite color is red."
-        should_end_session = False
+#     if session.get('attributes', {}) and "favoriteColor" in session.get('attributes', {}):
+#         favorite_color = session['attributes']['favoriteColor']
+#         speech_output = "Your favorite color is " + favorite_color + \
+#                         ". Goodbye."
+#         should_end_session = True
+#     else:
+#         speech_output = "I'm not sure what your favorite color is. " \
+#                         "You can say, my favorite color is red."
+#         should_end_session = False
 
-    # Setting reprompt_text to None signifies that we do not want to reprompt
-    # the user. If the user does not respond or says something that is not
-    # understood, the session will end.
-    return build_response(session_attributes, build_speechlet_response(
-        intent['name'], speech_output, reprompt_text, should_end_session))
+#     # Setting reprompt_text to None signifies that we do not want to reprompt
+#     # the user. If the user does not respond or says something that is not
+#     # understood, the session will end.
+#     return build_response(session_attributes, build_speechlet_response(
+#         intent['name'], speech_output, reprompt_text, should_end_session))
         
 def get_main_focus_intent_response(intent, session):
     session_attributes = {}
@@ -222,6 +249,66 @@ def add_reminder_intent_response(intent, session):
     should_end_session = False
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
+        
+def set_current_question(q):
+    state["question"] = q
+
+def execute_evening_routine_intent(intent, session):
+    session_attributes = {}
+    card_title = "Welcome"
+    speech_output = "Good evening, Name. Test getting response."
+    reprompt_text = "Good evening, again, Name."
+    slot_to_elicit = "new"
+    should_end_session = False
+    return build_response(session_attributes, build_qna_response(
+        card_title, speech_output, reprompt_text, should_end_session, slot_to_elicit, updated_intent))
+        
+def refresh_priorities_intent(intent, session):
+    set_current_question(CHECKIN_REFRESH_PRIORITIES)
+    session_attributes = {}
+    card_title = "Welcome"
+    speech_output = "Good evening. Did you make good progress on your priorities today?"
+    reprompt_text = "Okay okay."
+    should_end_session = False
+    return build_response(session_attributes, build_speechlet_response(
+        card_title, speech_output, reprompt_text, should_end_session))
+        
+# def refresh_reminders_intent(intent, session):
+#     set_current_question(CHECKIN_REFRESH_REMINDERS)
+#     card_title = "Welcome"
+#     speech_output = "Okay, I'll keep the same main focus for tomorrow."
+#     reprompt_text = "Okay okay."
+#     should_end_session = False 
+#     return build_response(session_attributes, build_speechlet_response(
+#         card_title, speech_output, reprompt_text, should_end_session))
+    
+# Determine what to do with this intent based on where we are in the session
+def handle_yes_intent(intent, session):
+    session_attributes = {}
+    if state["question"] == CHECKIN_REFRESH_PRIORITIES:
+        set_current_question(NO_QUESTION)
+        card_title = "Welcome"
+        speech_output = "Great work on your priorities! Do you want some reminders?"
+        set_current_question(CHECKIN_REFRESH_REMINDERS)
+        reprompt_text = "Okay okay."
+        should_end_session = False
+        return build_response(session_attributes, build_speechlet_response(
+            card_title, speech_output, reprompt_text, should_end_session))
+    elif state["question"] == CHECKIN_REFRESH_REMINDERS:
+        state["question"] = NO_QUESTION
+        card_title = "Welcome"
+        speech_output = "Okay, I'll remember that for tomorrow."
+        reprompt_text = "Okay no."
+        should_end_session = False
+        return build_response(session_attributes, build_speechlet_response(
+            card_title, speech_output, reprompt_text, should_end_session))
+    else:
+        card_title = "Welcome"
+        speech_output = "I don't know what question this is."
+        reprompt_text = "Okay no."
+        should_end_session = False
+        return build_response(session_attributes, build_speechlet_response(
+            card_title, speech_output, reprompt_text, should_end_session))
 
 # --------------- Events ------------------
 
@@ -251,7 +338,7 @@ def on_intent(intent_request, session):
 
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
-
+    
     # Dispatch to your skill's intent handlers
     # if intent_name == "MyColorIsIntent":
     #     return set_color_in_session(intent, session)
@@ -261,13 +348,21 @@ def on_intent(intent_request, session):
         return get_main_focus_intent_response(intent, session)
     elif intent_name == "AddReminderIntent":
         return add_reminder_intent_response(intent, session)
+    # elif intent_name == "ExecuteEveningRoutineIntent":
+    #     return execute_evening_routine_intent(intent, session)
+    elif intent_name == "CheckinRefreshPrioritiesIntent":
+        return refresh_priorities_intent(intent, session)
+    # elif intent_name == "CheckinRefreshRemindersIntent":
+    #     return refresh_reminders_intent(intent, session)
+    elif intent_name == "AMAZON.YesIntent":
+        return handle_yes_intent(intent, session)
     elif intent_name == "AMAZON.HelpIntent":
         # return get_welcome_response()
         return get_help_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
         return handle_session_end_request()
     else:
-        raise ValueError("Invalid intent")
+        raise ValueError("Invalid intent: " + intent_name)
 
 
 def on_session_ended(session_ended_request, session):
