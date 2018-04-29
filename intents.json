@@ -1,7 +1,7 @@
 {
     "interactionModel": {
         "languageModel": {
-            "invocationName": "me about my day",
+            "invocationName": "stimulus",
             "intents": [
                 {
                     "name": "AMAZON.CancelIntent",
@@ -68,7 +68,29 @@
                 },
                 {
                     "name": "SetMorningRoutineIntent",
-                    "slots": [],
+                    "slots": [
+                        {
+                            "name": "first",
+                            "type": "RoutineActivity",
+                            "samples": [
+                                "{first}"
+                            ]
+                        },
+                        {
+                            "name": "second",
+                            "type": "RoutineActivity",
+                            "samples": [
+                                "{second}"
+                            ]
+                        },
+                        {
+                            "name": "third",
+                            "type": "RoutineActivity",
+                            "samples": [
+                                "{third}"
+                            ]
+                        }
+                    ],
                     "samples": [
                         "edit the morning routine",
                         "edit my morning routine",
@@ -150,7 +172,65 @@
                     ]
                 }
             ],
-            "types": []
+            "types": [
+                {
+                    "name": "RoutineActivity",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "priorities",
+                                "synonyms": [
+                                    "review priorities",
+                                    "my priorities",
+                                    "walk through priorities",
+                                    "go through priorities",
+                                    "focus",
+                                    "main focus",
+                                    "my focus",
+                                    "my main focus"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "stretch",
+                                "synonyms": [
+                                    "stretches",
+                                    "stretching"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "meditate",
+                                "synonyms": [
+                                    "meditating",
+                                    "meditation"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "done",
+                                "synonyms": [
+                                    "that's okay",
+                                    "that's good",
+                                    "that's fine",
+                                    "i'm okay",
+                                    "i'm finished",
+                                    "i'm fine",
+                                    "i'm good",
+                                    "finish",
+                                    "finish setting up",
+                                    "that's it",
+                                    "that's all",
+                                    "i'm done"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         "dialog": {
             "intents": [
@@ -169,6 +249,40 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "SetMorningRoutineIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "first",
+                            "type": "RoutineActivity",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1204958508339.1039049616113"
+                            }
+                        },
+                        {
+                            "name": "second",
+                            "type": "RoutineActivity",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1204958508339.1449207184363"
+                            }
+                        },
+                        {
+                            "name": "third",
+                            "type": "RoutineActivity",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1204958508339.542191589350"
+                            }
+                        }
+                    ]
                 }
             ]
         },
@@ -179,6 +293,33 @@
                     {
                         "type": "PlainText",
                         "value": "What's your main focus for tomorrow?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1204958508339.1039049616113",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want to do first?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1204958508339.1449207184363",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want to do second?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1204958508339.542191589350",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want to do third?"
                     }
                 ]
             }

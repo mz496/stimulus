@@ -86,18 +86,19 @@ def delete_name(userID, name):
 
 # --------------- Helpers that build all of the responses ----------------------
 
-def build_speechlet_response(output, title=None, reprompt_text=None, should_end_session=False):
+def build_speechlet_response(output=None, title=None, reprompt_text=None, should_end_session=False):
     result = {}
-    if output.strip()[:7] == "<speak>":
-        result["outputSpeech"] = {
-            'type': 'SSML',
-            'ssml': output
-        }
-    else:
-        result["outputSpeech"] = {
-            'type': 'PlainText',
-            'text': output
-        }
+    if output is not None:
+        if output.strip()[:7] == "<speak>":
+            result["outputSpeech"] = {
+                'type': 'SSML',
+                'ssml': output
+            }
+        else:
+            result["outputSpeech"] = {
+                'type': 'PlainText',
+                'text': output
+            }
         
     result["shouldEndSession"] = should_end_session
     
@@ -107,13 +108,21 @@ def build_speechlet_response(output, title=None, reprompt_text=None, should_end_
             'title': "SessionSpeechlet - " + title,
             'content': "SessionSpeechlet - " + output
         }
-    if reprompt_text is not None: # TODO: is this different for SSML?
-        result["reprompt"] = {
-            'outputSpeech': {
-                'type': speech_type,
-                'text': reprompt_text
+    if reprompt_text is not None:
+        if reprompt_text.strip()[:7] == "<speak>":
+            result["reprompt"] = {
+                'outputSpeech': {
+                    'type': 'SSML',
+                    'ssml': reprompt_text
+                }
             }
-        }
+        else:
+            result["reprompt"] = {
+                "outputSpeech": {
+                    "type": "PlainText",
+                    "text": reprompt_text
+                }
+            }
     return result
     
 def prepend_to_speechlet_response(prepend, response):
@@ -126,15 +135,25 @@ def prepend_to_speechlet_response(prepend, response):
         
     return response
     
-def build_elicit_response(output, slot_to_elicit, updated_intent, title=None, reprompt_text=None, should_end_session=False):
-    result = build_speechlet_response(output, title=title, reprompt_text=reprompt_text, should_end_session=should_end_session)
+def build_elicit_response(slot_to_elicit, output=None, title=None, reprompt_text=None, should_end_session=False):
+    result = build_speechlet_response(output=output, title=title, reprompt_text=reprompt_text, should_end_session=should_end_session)
     result["directives"] = [
         {
             "type": "Dialog.ElicitSlot",
-            "slotToElicit": slot_to_elicit,
-            "updatedIntent": updated_intent
+            "slotToElicit": slot_to_elicit
         }    
     ]
+    return result
+    
+def build_delegate_response(output=None, updated_intent=None, title=None, reprompt_text=None, should_end_session=False):
+    result = build_speechlet_response(output=output, title=title, reprompt_text=reprompt_text, should_end_session=should_end_session)
+    result["directives"] = [
+        {
+            "type": "Dialog.Delegate",
+        }
+    ]
+    if updated_intent is not None:
+        result["directives"][0]["updatedIntent"] = updated_intent
     return result
 
 
@@ -213,120 +232,24 @@ def handle_session_end_request(intent, session):
     should_end_session = True
     return build_response({}, build_speechlet_response(
         card_title, speech_output, None, should_end_session))
-
-
-# def create_favorite_color_attributes(favorite_color):
-#     return {"favoriteColor": favorite_color}
-
-
-# def set_color_in_session(intent, session):
-#     """ Sets the color in the session and prepares the speech to reply to the
-#     user.
-#     """
-
-#     card_title = intent['name']
-#     session_attributes = {}
-#     should_end_session = False
-
-#     if 'Color' in intent['slots']:
-#         favorite_color = intent['slots']['Color']['value']
-#         session_attributes = create_favorite_color_attributes(favorite_color)
-#         speech_output = "I now know your favorite color is " + \
-#                         favorite_color + \
-#                         ". You can ask me your favorite color by saying, " \
-#                         "what's my favorite color?"
-#         reprompt_text = "You can ask me your favorite color by saying, " \
-#                         "what's my favorite color?"
-#     else:
-#         speech_output = "I'm not sure what your favorite color is. " \
-#                         "Please try again."
-#         reprompt_text = "I'm not sure what your favorite color is. " \
-#                         "You can tell me your favorite color by saying, " \
-#                         "my favorite color is red."
-#     return build_response(session_attributes, build_speechlet_response(
-#         card_title, speech_output, reprompt_text, should_end_session))
-
-
-# def get_color_from_session(intent, session):
-#     session_attributes = {}
-#     reprompt_text = None
-
-#     if session.get('attributes', {}) and "favoriteColor" in session.get('attributes', {}):
-#         favorite_color = session['attributes']['favoriteColor']
-#         speech_output = "Your favorite color is " + favorite_color + \
-#                         ". Goodbye."
-#         should_end_session = True
-#     else:
-#         speech_output = "I'm not sure what your favorite color is. " \
-#                         "You can say, my favorite color is red."
-#         should_end_session = False
-
-#     # Setting reprompt_text to None signifies that we do not want to reprompt
-#     # the user. If the user does not respond or says something that is not
-#     # understood, the session will end.
-#     return build_response(session_attributes, build_speechlet_response(
-#         intent['name'], speech_output, reprompt_text, should_end_session))
         
-def get_main_focus_intent_response(intent, session):
+def get_main_focus_intent_response(intent, session, state):
     session_attributes = {}
     speech_output = "This is the main focus intent."
     return build_response(session_attributes, build_speechlet_response(
         output=speech_output))
         
-# def add_reminder_intent_response(intent, session):
-#     store_thing()
-#     session_attributes = {}
-#     card_title = "Welcome"
-#     speech_output = "Added reminder."
-#     reprompt_text = "Added reminder, again."
-#     should_end_session = False
-#     return build_response(session_attributes, build_speechlet_response(
-#         card_title, speech_output, reprompt_text, should_end_session))
+#================================
+# Helpers
         
-def set_current_question(q):
-    state["question"] = q
-def get_current_question():
-    return state["question"]
+# def set_current_question(q):
+#     state["question"] = q
+# def state["question"]:
+#     return state["question"]
 def reset_state(state):
     state["question"] = NO_QUESTION
     state["evening_routine_before_priorities"] = "<speak></speak>"
     state["evening_routine_after_priorities"] = "<speak></speak>"
-
-# def execute_evening_routine_intent(intent, session):
-#     session_attributes = {}
-#     card_title = "Welcome"
-#     speech_output = "Good evening, Name. Test getting response."
-#     reprompt_text = "Good evening, again, Name."
-#     slot_to_elicit = "new"
-#     should_end_session = False
-#     return build_response(session_attributes, build_qna_response(
-#         card_title, speech_output, reprompt_text, should_end_session, slot_to_elicit, updated_intent))
-        
-# def refresh_reminders_intent(intent, session):
-#     set_current_question(CHECKIN_KEEP_OR_REPLACE_FOCUS)
-#     card_title = "Welcome"
-#     speech_output = "Okay, I'll keep the same main focus for tomorrow."
-#     reprompt_text = "Okay okay."
-#     should_end_session = False 
-#     return build_response(session_attributes, build_speechlet_response(
-#         card_title, speech_output, reprompt_text, should_end_session))
-
-# def get_next_evening_routine():
-#     if current_pos >= len(EVENING_ORDER):
-#         # We are done
-#         speech_output = "We're all done for today. Get a good night's rest tonight, and I'll catch up with you in the morning!"
-#         return build_speechlet_response(output=speech_output, should_end_session=True)
-#     if EVENING_ORDER[current_pos] == PRIORITIES:
-#         speech_output = "Did you make progress on your priorities today?"
-#         set_current_question(CHECKIN_REFRESH_PRIORITIES)
-#         return build_speechlet_response(output=speech_output)
-#     if EVENING_ORDER[current_pos] == REFLECTION:
-#         if 
-#         return build_speechlet_response(output=get_evening_reflection_script(), speech_type="SSML")
-#     if EVENING_ORDER[current_pos] == MEDITATION:
-#         return build_speechlet_response(output=get_evening_meditation_script(), speech_type="SSML")
-        
-#     current_pos += 1
 
 # TODO: randomize agreements from alexa
 
@@ -339,6 +262,32 @@ def concatTexts(a,b):
     return "<speak>"+aNoTag+" "+bNoTag+"</speak>"
     
     
+#========================
+# Changing routine order methods
+def set_morning_routine_intent(intent, session, state):
+    # Each of the slots can take one of the activities available or a "done" synonym
+    # Find the last fulfilled slot; finish if it says "done" or dialogState is COMPLETED
+    
+    # Reprompt user if the last response was invalid
+    return build_response({}, build_elicit_response(slot_to_elicit))
+    
+    # if "value" not in intent["slots"][slot_to_elicit]:
+    #     speech_output = "Sure. What's your main focus for tomorrow?"
+    #     return build_response({}, build_delegate_response()))
+    # else:
+    #     print("WANT TO STORE THIS: "+str(intent))
+    #     add_info({
+    #         "userId": session["user"]["userId"],
+    #         "mainFocus":intent["slots"][slot_to_elicit]["value"]
+    #     })
+    #     set_current_question(NO_QUESTION)
+    #     prepend = "Sounds good. I'll make a note of that." # TODO: make a card in alexa app for this?
+        
+    #     # Execute everything after the priorities, and end the session
+    #     return get_ending_evening_routine(prepend, state)
+    
+def set_evening_routine_intent(intent, session, state):
+    pass
     
 #========================
 # Morning routine parts
@@ -371,7 +320,7 @@ def execute_morning_routine_intent(session, state):
     routineTexts = {
         MEDITATION: get_morning_meditation_script(),
         STRETCHING: get_morning_stretching_script(),
-        PRIORITIES: get_morning_priorities_script(session["user"]["userId"])
+        PRIORITIES: get_morning_priorities_script(session["user"]["userId"]) #TODO: This will fail if user has never used skill before
     }
     # All of these keys must exist in the morning order list
 
@@ -465,44 +414,44 @@ def execute_evening_routine_intent(session, state):
 #==================================
 # Request main focus info methods
 
-def keep_main_focus_intent(intent, session):
+def keep_main_focus_intent(intent, session, state):
     # Only trigger if we are in the right place in the session
-    if get_current_question() == CHECKIN_KEEP_OR_REPLACE_FOCUS:
-        set_current_question(NO_QUESTION)
+    if state["question"] == CHECKIN_KEEP_OR_REPLACE_FOCUS:
+        state["question"] = NO_QUESTION
         prepend = "Okay, I'll make tomorrow's main focus the same as today's."
         return get_ending_evening_routine(prepend, state)
 
-    raise ValueError("Question value expected: "+CHECKIN_KEEP_OR_REPLACE_FOCUS+", got: "+get_current_question())
+    raise ValueError("Question value expected: "+CHECKIN_KEEP_OR_REPLACE_FOCUS+", got: "+state["question"])
             
-def replace_main_focus_intent(intent, session):
-    if get_current_question() == CHECKIN_KEEP_OR_REPLACE_FOCUS:
+def replace_main_focus_intent(intent, session, state):
+    if state["question"] == CHECKIN_KEEP_OR_REPLACE_FOCUS:
         slot_to_elicit = "newMainFocus"
         
         if "value" not in intent["slots"][slot_to_elicit]:
             speech_output = "Sure. What's your main focus for tomorrow?"
             return build_response({}, build_elicit_response(
-                output=speech_output, slot_to_elicit=slot_to_elicit, updated_intent=intent))
+                slot_to_elicit=slot_to_elicit, output=speech_output))
         else:
             print("WANT TO STORE THIS: "+str(intent))
             add_info({
                 "userId": session["user"]["userId"],
                 "mainFocus":intent["slots"][slot_to_elicit]["value"]
             })
-            set_current_question(NO_QUESTION)
+            state["question"] = NO_QUESTION
             prepend = "Sounds good. I'll make a note of that." # TODO: make a card in alexa app for this?
             
             # Execute everything after the priorities, and end the session
             return get_ending_evening_routine(prepend, state)
     
-    raise ValueError("Question value expected: "+CHECKIN_KEEP_OR_REPLACE_FOCUS+", got: "+get_current_question())
+    raise ValueError("Question value expected: "+CHECKIN_KEEP_OR_REPLACE_FOCUS+", got: "+state["question"])
 #=========================================
     
 # Determine what to do with this intent based on where we are in the session
-def handle_yes_intent(intent, session):
-    if get_current_question() == CHECKIN_REFRESH_PRIORITIES:
-        set_current_question(NO_QUESTION)
+def handle_yes_intent(intent, session, state):
+    if state["question"] == CHECKIN_REFRESH_PRIORITIES:
+        state["question"] = NO_QUESTION
         speech_output = "Great work today! Do you want to keep it the same or set a new one?"
-        set_current_question(CHECKIN_KEEP_OR_REPLACE_FOCUS)
+        state["question"] = CHECKIN_KEEP_OR_REPLACE_FOCUS
         return build_response({}, build_speechlet_response(
             output=speech_output))
     else:
@@ -510,11 +459,11 @@ def handle_yes_intent(intent, session):
         return build_response({}, build_speechlet_response(
             output=speech_output))
 
-def handle_no_intent(intent, session):
-    if get_current_question() == CHECKIN_REFRESH_PRIORITIES:
-        set_current_question(NO_QUESTION)
+def handle_no_intent(intent, session, state):
+    if state["question"] == CHECKIN_REFRESH_PRIORITIES:
+        state["question"] = NO_QUESTION
         speech_output = "Sorry to hear that, but tomorrow's a new day! Do you want to keep it the same or set a new one?"
-        set_current_question(CHECKIN_KEEP_OR_REPLACE_FOCUS)
+        state["question"] = CHECKIN_KEEP_OR_REPLACE_FOCUS
         return build_response({}, build_speechlet_response(
             output=speech_output))
     else:
@@ -547,7 +496,7 @@ def on_launch(launch_request, session, state):
     # return execute_evening_routine_intent(session, state)
 
 
-def on_intent(intent_request, session):
+def on_intent(intent_request, session, state):
     """ Called when the user specifies an intent for this skill """
 
     print("on_intent requestId=" + intent_request['requestId'] +
@@ -560,25 +509,16 @@ def on_intent(intent_request, session):
         "GetMainFocusIntent": get_main_focus_intent_response,
         "CheckinKeepMainFocusIntent": keep_main_focus_intent,
         "CheckinReplaceMainFocusIntent": replace_main_focus_intent,
+        "SetMorningRoutineIntent": set_morning_routine_intent,
+        "SetEveningRoutineIntent": set_evening_routine_intent,
         "AMAZON.YesIntent": handle_yes_intent,
         "AMAZON.NoIntent": handle_no_intent,
         "AMAZON.CancelIntent": handle_session_end_request,
         "AMAZON.StopIntent": handle_session_end_request,
-        
-        # "AMAZON.PauseIntent": handle_pause_request,
-        # "AMAZON.ResumeIntent": handle_resume_request,
-        # "AMAZON.LoopOffIntent": handle_loop_off_request,
-        # "AMAZON.LoopOnIntent": handle_loop_on_request,
-        # "AMAZON.NextIntent": handle_next_request,
-        # "AMAZON.PreviousIntent": handle_prev_request,
-        # "AMAZON.RepeatIntent": handle_repeat_request,
-        # "AMAZON.ShuffleOffIntent": handle_shuf_off_request,
-        # "AMAZON.ShuffleOnIntent": handle_shuf_on_request,
-        # "AMAZON.StartOverIntent": handle_start_over_request
     }
     
     try:
-        return handlers[intent_name](intent, session)
+        return handlers[intent_name](intent, session, state)
     except KeyError:
         raise ValueError("Invalid intent: "+intent_name)
     
@@ -652,6 +592,6 @@ def lambda_handler(event, context):
     if event['request']['type'] == "LaunchRequest":
         return on_launch(event['request'], event['session'], state)
     elif event['request']['type'] == "IntentRequest":
-        return on_intent(event['request'], event['session']) # TODO: add state here as well?
+        return on_intent(event['request'], event['session'], state)
     elif event['request']['type'] == "SessionEndedRequest":
         return on_session_ended(event['request'], event['session'])
