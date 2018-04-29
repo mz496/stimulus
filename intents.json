@@ -37,11 +37,9 @@
                     "slots": [],
                     "samples": [
                         "what's my morning routine",
-                        "what's my sunrise routine",
                         "what's my wake up routine",
                         "what's my waking routine",
                         "what does my morning routine look like",
-                        "what does my sunrise routine look like",
                         "what does my wake up routine look like",
                         "what does my waking routine look like",
                         "what does my morning look like"
@@ -135,69 +133,6 @@
                     ]
                 },
                 {
-                    "name": "AMAZON.YesIntent",
-                    "samples": []
-                },
-                {
-                    "name": "AMAZON.NoIntent",
-                    "samples": []
-                },
-                {
-                    "name": "CheckinKeepMainFocusIntent",
-                    "slots": [],
-                    "samples": [
-                        "leave it",
-                        "leave it as it is",
-                        "keep the old one",
-                        "stick with my old main focus",
-                        "stick with my old focus",
-                        "stick with my old one",
-                        "stay with the same focus",
-                        "stay with the same main focus",
-                        "keep my main focus",
-                        "keep it",
-                        "keep it the same",
-                        "keep the same main focus",
-                        "keep the same focus"
-                    ]
-                },
-                {
-                    "name": "CheckinReplaceMainFocusIntent",
-                    "slots": [
-                        {
-                            "name": "newMainFocus",
-                            "type": "AMAZON.EventType",
-                            "samples": [
-                                "my new focus is {newMainFocus}",
-                                "my new main focus is {newMainFocus}",
-                                "my main focus is {newMainFocus}",
-                                "my focus is {newMainFocus}",
-                                "{newMainFocus}"
-                            ]
-                        }
-                    ],
-                    "samples": [
-                        "replace the old one",
-                        "replace my focus",
-                        "replace my main focus",
-                        "replace it",
-                        "set a new focus",
-                        "set a new main focus",
-                        "set a new one",
-                        "a new one",
-                        "a new main focus",
-                        "a new focus"
-                    ]
-                },
-                {
-                    "name": "ExecuteEveningRoutineIntent",
-                    "slots": [],
-                    "samples": [
-                        "ask about my day",
-                        "ask me about my day"
-                    ]
-                },
-                {
                     "name": "NewUserCollectInfoIntent",
                     "slots": [
                         {
@@ -262,6 +197,84 @@
                         "change what alexa calls me",
                         "change my nickname",
                         "change my name"
+                    ]
+                },
+                {
+                    "name": "AMAZON.YesIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NoIntent",
+                    "samples": []
+                },
+                {
+                    "name": "CheckinKeepMainFocusIntent",
+                    "slots": [],
+                    "samples": [
+                        "leave it",
+                        "leave it as it is",
+                        "keep the old one",
+                        "stick with my old main focus",
+                        "stick with my old focus",
+                        "stick with my old one",
+                        "stay with the same focus",
+                        "stay with the same main focus",
+                        "keep my main focus",
+                        "keep it",
+                        "keep it the same",
+                        "keep the same main focus",
+                        "keep the same focus"
+                    ]
+                },
+                {
+                    "name": "CheckinReplaceMainFocusIntent",
+                    "slots": [
+                        {
+                            "name": "newMainFocus",
+                            "type": "AMAZON.EventType",
+                            "samples": [
+                                "my new focus is {newMainFocus}",
+                                "my new main focus is {newMainFocus}",
+                                "my main focus is {newMainFocus}",
+                                "my focus is {newMainFocus}",
+                                "{newMainFocus}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "replace the old one",
+                        "replace my focus",
+                        "replace my main focus",
+                        "replace it",
+                        "set a new focus",
+                        "set a new main focus",
+                        "set a new one",
+                        "a new one",
+                        "a new main focus",
+                        "a new focus"
+                    ]
+                },
+                {
+                    "name": "ExecuteEveningRoutineIntent",
+                    "slots": [],
+                    "samples": [
+                        "ask about my day",
+                        "ask me about my day"
+                    ]
+                },
+                {
+                    "name": "ExecuteMorningRoutineIntent",
+                    "slots": [],
+                    "samples": [
+                        "start the day",
+                        "i'm ready to start my day",
+                        "i'm ready to start the day",
+                        "i'm up",
+                        "i'm awake",
+                        "start my day off",
+                        "tell me about my day",
+                        "start my day",
+                        "start off my day"
                     ]
                 }
             ],

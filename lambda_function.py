@@ -18,31 +18,31 @@ import json
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('StimulusSkillDB')
 
-def get_names(userID):
-    names = ""
+# def get_names(userID):
+#     names = ""
 
-    response = table.query(
-        KeyConditionExpression=Key('UserID').eq(userID)
-    )
+#     response = table.query(
+#         KeyConditionExpression=Key('UserID').eq(userID)
+#     )
 
-    nameCount = len(response['Items'])
-    for idx, item in enumerate(response['Items']):
-        names += item['Name']
-        if idx == nameCount - 2:
-            names += " and "
-        elif idx != nameCount - 1:
-            names += ", "
+#     nameCount = len(response['Items'])
+#     for idx, item in enumerate(response['Items']):
+#         names += item['Name']
+#         if idx == nameCount - 2:
+#             names += " and "
+#         elif idx != nameCount - 1:
+#             names += ", "
 
-    return names, nameCount
+#     return names, nameCount
 
-def get_name_list(userID):
-    names, number = get_names(userID)
-    if number == 0:
-        return "There is no-one here in the house."
-    elif number == 1:
-        return names + " is the only person here in the house."
-    else:
-        return names + " are here in the house."
+# def get_name_list(userID):
+#     names, number = get_names(userID)
+#     if number == 0:
+#         return "There is no-one here in the house."
+#     elif number == 1:
+#         return names + " is the only person here in the house."
+#     else:
+#         return names + " are here in the house."
         
 def get_info(userId):
     response = table.query(
@@ -54,6 +54,7 @@ def get_info(userId):
 
 def add_info(item):
     # item must be a dict containing the userId key and any other k-v pairs desired
+    
     try:
         if len(get_info(item["userId"])) == 0:
             response = table.put_item(
@@ -64,9 +65,9 @@ def add_info(item):
             for key in item:
                 if key != "userId":
                     keys += [key]
-            update_expr_map = {}
             
             # {"firstName": ":val1" ...}
+            update_expr_map = {}
             for i in range(len(keys)):
                 update_expr_map[keys[i]] = ":val{0}".format(i+1)
                 
@@ -92,20 +93,12 @@ def add_info(item):
         return e.response['Error']['Code']        
         
     return None
-    
-# def update_info(item):
-#     try:
-        
-#     except ClientError as e:
-#         print(e.response)
-#         return e.response["Error"]["Code"]
 
-def delete_name(userID, name):
+def delete_info(userId):
     try:
         response = table.delete_item(
-           Key={
-                'UserID': userID,
-                'Name': name
+          Key={
+                'userId': userId,
             }
         )    
     except ClientError as e:
@@ -114,8 +107,10 @@ def delete_name(userID, name):
 
     return None
 
-
-
+def serialize_list(L):
+    return ",".join(L)
+def deserialize_list(s):
+    return s.split(",")
 
 
 
@@ -190,7 +185,6 @@ def build_response(session_attributes, speechlet_response):
         'response': speechlet_response
     }
 
-
 # --------------- Functions that control the skill's behavior ------------------
 
 # ==========================
@@ -258,15 +252,15 @@ DEFAULT_STATE = {
     "set_routine_elicit_index":0,
     "set_order_partial":[],
 }
+NUM_DB_COLS = 4 # userId, mainFocus, morningRoutine, eveningRoutine
 
 # Create modifiable copy
 state = {}
 for key in DEFAULT_STATE:
     state[key] = DEFAULT_STATE[key]
+    
 #=========================
-
-def store_thing():
-    add_info("asdfasdf","STUFF")
+# Default intents
 
 def get_help_response(intent, session):
     session_attributes = {}
@@ -304,15 +298,28 @@ def handle_session_end_request(intent, session):
     return build_response({}, build_speechlet_response(
         card_title, speech_output, None, should_end_session))
         
+#=================================
+# Simple getters/setters
+    
 def get_main_focus_intent_response(intent, session, state):
-    session_attributes = {}
-    speech_output = "This is the main focus intent."
-    return build_response(session_attributes, build_speechlet_response(
+    print(get_info(session["user"]["userId"]))
+    mainFocus = get_info(session["user"]["userId"])[0]["mainFocus"]
+    speech_output = "Your main focus for today is {0}.".format(mainFocus)
+    return build_response({}, build_speechlet_response(
         output=speech_output))
         
     # TODO: make sure this is robust against if there is no main focus i.e. firstrun
     # TODO: show this on the screen?
-        
+    
+def get_morning_routine_intent(intent, session, state):
+    pass
+    
+def get_evening_routine_intent(intent, session, state):
+    pass
+
+def set_name_intent(intent, session, state):
+    pass
+
 #================================
 # Helpers
 
@@ -341,9 +348,20 @@ def sequentialize(L, last_joiner="and"):
         return "{0}, {1} {2}".format(", ".join(L[:-1]), last_joiner, L[-1])
 
 # Convert constant for time of day into a DB column name
-def get_routine_key_name(time_of_day):
+def get_routine_DB_key_name(time_of_day):
     return time_of_day.lower() + "Routine"
-
+def get_DB_key_name(slot_name):
+    translation = {
+        "mainFocus":"mainFocus",
+        "newMainFocus":"mainFocus",
+        "initialMainFocus":"mainFocus",
+        "newFirstName":"firstName",
+        "firstName":"firstName"
+    }
+    if slot_name not in translation:
+        return slot_name
+    else:
+        return translation[slot_name]
 
 
 #===================================
@@ -356,19 +374,6 @@ def new_user_intro(session, state):
     
     return build_response({}, build_speechlet_response(
         output=speech_output))
-        
-    # return build_response({}, build_elicit_response(
-    #     slot_to_elicit="firstName", output=speech_output))
-        
-    # add_info({
-    #     "userId": session["user"]["userId"],
-    #     "firstName": first_name,
-    #     "mainFocus": main_focus,
-    #     get_routine_key_name(MORNING): ORDERS[MORNING],
-    #     get_routine_key_name(EVENING): ORDERS[EVENING]
-    # })
-
-    # Name column?
 
 def new_user_collect_info_intent(intent_request, session, state):
     if intent_request["dialogState"] == "COMPLETED":
@@ -381,8 +386,8 @@ def new_user_collect_info_intent(intent_request, session, state):
             
         add_info({
             "userId": session["user"]["userId"],
-            get_routine_key_name(MORNING): ORDERS[MORNING],
-            get_routine_key_name(EVENING): ORDERS[EVENING]
+            get_routine_DB_key_name(MORNING): ORDERS[MORNING],
+            get_routine_DB_key_name(EVENING): ORDERS[EVENING]
         })
             
         return build_response({}, build_speechlet_response(
@@ -394,7 +399,7 @@ def new_user_collect_info_intent(intent_request, session, state):
             if slot_info["confirmationStatus"] == "CONFIRMED":
                 add_info({
                     "userId": session["user"]["userId"],
-                    slot_name: slot_info["value"]
+                    get_DB_key_name(slot_name): slot_info["value"]
                 })
         return build_response({}, build_delegate_response())
 
@@ -461,7 +466,7 @@ def set_routine_intent(intent, session, state, time_of_day):
                 ORDERS[time_of_day] = state["set_order_partial"]
                 add_info({
                     "userId": session["user"]["userId"],
-                    get_routine_key_name(time_of_day): ORDERS[time_of_day]
+                    get_routine_DB_key_name(time_of_day): ORDERS[time_of_day]
                 })
                 speech_output = get_final_set_routine_text(time_of_day)
                 # speech_output = "Okay, sounds good. I've updated your morning routine to " + (",".join([a.lower() for a in MORNING_ORDER]))
@@ -591,6 +596,8 @@ def execute_evening_routine_intent(session, state):
     # All of these keys must exist in the evening order list
     
     reset_state(state)
+    stored_evening_order = get_info(session["session"]["userId"])
+    print(stored_evening_order)
     
     prioritiesIndex = ORDERS[EVENING].index(PRIORITIES) # TODO: what if user doesn't add priorities to routine?
     
@@ -636,7 +643,7 @@ def replace_main_focus_intent(intent, session, state):
             # print("WANT TO STORE THIS: "+str(intent))
             add_info({
                 "userId": session["user"]["userId"],
-                "mainFocus":intent["slots"][slot_to_elicit]["value"]
+                get_DB_key_name("mainFocus"):intent["slots"][slot_to_elicit]["value"]
             })
             state["question"] = NO_QUESTION
             prepend = "Sounds good. I'll make a note of that here." # TODO: make a card in alexa app for this? TODO: make confirmation with user's name?
@@ -693,21 +700,26 @@ def on_launch(launch_request, session, state):
     print("on_launch "+str(launch_request)+" "+str(session)+" requestId=" + launch_request['requestId'] +
           ", sessionId=" + session['sessionId'])
 
-    # If new user, prompt to set up first
+    # If new or corrupted user, prompt to set up first
     userId = session["user"]["userId"]
-    if len(get_info(userId)) == 0:
+    query_user = get_info(userId)
+    if len(query_user) == 0 or \
+    (len(query_user) > 0 and len(query_user[0].keys()) != NUM_DB_COLS):
+        if len(query_user) > 0 and len(query_user[0].keys()) != NUM_DB_COLS:
+            delete_info(userId)
+            
         return new_user_intro(session, state)          
 
     # Dispatch to your skill's launch
     
-    # TODO: Get user time from API
+    # TODO: Get user time from API?
     
     ########################################
     ########################################
     ########################################
     
     # return execute_morning_routine_intent(session, state)
-    return execute_evening_routine_intent(session, state)
+    # return execute_evening_routine_intent(session, state)
 
 
 def on_intent(intent_request, session, state):
@@ -721,16 +733,26 @@ def on_intent(intent_request, session, state):
     
     
     # If new user, and intent is not setting up, prompt to set up first
+    # If corrupted user, prompt to set up again
     userId = session["user"]["userId"]
-    if len(get_info(userId)) == 0 and intent_name != "NewUserCollectInfoIntent":
+    query_user = get_info(userId)
+    print(query_user)
+    if (len(query_user) == 0 and intent_name != "NewUserCollectInfoIntent") or \
+    (len(query_user) > 0 and len(query_user[0].keys()) != NUM_DB_COLS):
+        if len(query_user) > 0 and len(query_user[0].keys()) != NUM_DB_COLS:
+            delete_info(userId)
+            
         return new_user_intro(session, state)
 
-    # TODO: allow user to change name?
-    
     handlers = {
         "GetMainFocusIntent": get_main_focus_intent_response,
+        "GetMorningRoutineIntent": get_morning_routine_intent,
+        "GetEveningRoutineIntent": get_evening_routine_intent,
+        "SetNameIntent": set_name_intent,
         "CheckinKeepMainFocusIntent": keep_main_focus_intent,
         "CheckinReplaceMainFocusIntent": replace_main_focus_intent,
+        "ExecuteMorningRoutineIntent": execute_morning_routine_intent,
+        "ExecuteEveningRoutineIntent": execute_evening_routine_intent,
         "AMAZON.YesIntent": handle_yes_intent,
         "AMAZON.NoIntent": handle_no_intent,
         "AMAZON.CancelIntent": handle_session_end_request,
@@ -790,3 +812,6 @@ def lambda_handler(event, context):
         return on_intent(event['request'], event['session'], state)
     elif event['request']['type'] == "SessionEndedRequest":
         return on_session_ended(event['request'], event['session'])
+
+
+# TODO: error handling gracefully? "Sorry, I encountered an error trying to manage your data. Please try asking Stimulus to set up again."
