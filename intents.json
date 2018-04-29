@@ -71,21 +71,21 @@
                     "slots": [
                         {
                             "name": "first",
-                            "type": "RoutineActivity",
+                            "type": "MorningRoutineActivity",
                             "samples": [
                                 "{first}"
                             ]
                         },
                         {
                             "name": "second",
-                            "type": "RoutineActivity",
+                            "type": "MorningRoutineActivity",
                             "samples": [
                                 "{second}"
                             ]
                         },
                         {
                             "name": "third",
-                            "type": "RoutineActivity",
+                            "type": "MorningRoutineActivity",
                             "samples": [
                                 "{third}"
                             ]
@@ -174,7 +174,7 @@
             ],
             "types": [
                 {
-                    "name": "RoutineActivity",
+                    "name": "MorningRoutineActivity",
                     "values": [
                         {
                             "name": {
@@ -193,19 +193,19 @@
                         },
                         {
                             "name": {
-                                "value": "stretch",
+                                "value": "stretches",
                                 "synonyms": [
-                                    "stretches",
+                                    "stretch",
                                     "stretching"
                                 ]
                             }
                         },
                         {
                             "name": {
-                                "value": "meditate",
+                                "value": "meditation",
                                 "synonyms": [
-                                    "meditating",
-                                    "meditation"
+                                    "meditate",
+                                    "meditating"
                                 ]
                             }
                         },
@@ -257,7 +257,7 @@
                     "slots": [
                         {
                             "name": "first",
-                            "type": "RoutineActivity",
+                            "type": "MorningRoutineActivity",
                             "confirmationRequired": false,
                             "elicitationRequired": true,
                             "prompts": {
@@ -266,7 +266,7 @@
                         },
                         {
                             "name": "second",
-                            "type": "RoutineActivity",
+                            "type": "MorningRoutineActivity",
                             "confirmationRequired": false,
                             "elicitationRequired": true,
                             "prompts": {
@@ -275,7 +275,7 @@
                         },
                         {
                             "name": "third",
-                            "type": "RoutineActivity",
+                            "type": "MorningRoutineActivity",
                             "confirmationRequired": false,
                             "elicitationRequired": true,
                             "prompts": {

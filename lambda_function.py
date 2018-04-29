@@ -125,16 +125,6 @@ def build_speechlet_response(output=None, title=None, reprompt_text=None, should
             }
     return result
     
-def prepend_to_speechlet_response(prepend, response):
-    if response["outputSpeech"]["type"] == "PlainText":
-        response["outputSpeech"]["text"] = prepend + response["outputSpeech"]["text"]
-    else:
-        # skip <speak>
-        response["outputSpeech"]["text"] = response["outputSpeech"]["text"].strip()
-        response["outputSpeech"]["text"] = response["outputSpeech"]["text"][:7] + prepend + response["outputSpeech"]["text"][7:]
-        
-    return response
-    
 def build_elicit_response(slot_to_elicit, output=None, title=None, reprompt_text=None, should_end_session=False):
     result = build_speechlet_response(output=output, title=title, reprompt_text=reprompt_text, should_end_session=should_end_session)
     result["directives"] = [
@@ -145,8 +135,8 @@ def build_elicit_response(slot_to_elicit, output=None, title=None, reprompt_text
     ]
     return result
     
-def build_delegate_response(output=None, updated_intent=None, title=None, reprompt_text=None, should_end_session=False):
-    result = build_speechlet_response(output=output, title=title, reprompt_text=reprompt_text, should_end_session=should_end_session)
+def build_delegate_response(updated_intent=None, title=None, should_end_session=False):
+    result = build_speechlet_response(output=None, title=title, reprompt_text=None, should_end_session=should_end_session)
     result["directives"] = [
         {
             "type": "Dialog.Delegate",
@@ -178,21 +168,38 @@ def build_response(session_attributes, speechlet_response):
 # def handle_start_over_request(intent, session):
 
 # --------------- Functions that control the skill's behavior ------------------
+
+# ==========================
+# Constants
 CHECKIN_REFRESH_PRIORITIES = "CHECKIN_REFRESH_PRIORITIES"
 CHECKIN_KEEP_OR_REPLACE_FOCUS = "CHECKIN_KEEP_OR_REPLACE_FOCUS"
 NO_QUESTION = "_"
+
 PRIORITIES = "PRIORITIES"
 REFLECTION = "REFLECTION"
 MEDITATION = "MEDITATION"
 STRETCHING = "STRETCHING"
+DONE = "DONE"
 MORNING_ORDER = [MEDITATION,STRETCHING,PRIORITIES]
 EVENING_ORDER = [REFLECTION,PRIORITIES,MEDITATION]
-state = {
+
+# For reset purposes only, do not modify
+DEFAULT_STATE = {
     "question":NO_QUESTION,
     "evening_routine_before_priorities":"<speak></speak>",
     "evening_routine_after_priorities":"<speak></speak>",
-    "morning_routine":"<speak></speak>"
+    "morning_routine":"<speak></speak>",
+    "morning_routine_elicit_index":0,
+    "evening_routine_elicit_index":0,
+    "morning_order_partial": [],
+    "evening_order_partial": [],
 }
+
+# Create modifiable copy
+state = {}
+for key in DEFAULT_STATE:
+    state[key] = DEFAULT_STATE[key]
+#=========================
 
 def store_thing():
     add_info("asdfasdf","STUFF")
@@ -241,15 +248,11 @@ def get_main_focus_intent_response(intent, session, state):
         
 #================================
 # Helpers
-        
-# def set_current_question(q):
-#     state["question"] = q
-# def state["question"]:
-#     return state["question"]
+
 def reset_state(state):
-    state["question"] = NO_QUESTION
-    state["evening_routine_before_priorities"] = "<speak></speak>"
-    state["evening_routine_after_priorities"] = "<speak></speak>"
+    for key in DEFAULT_STATE:
+        state[key] = DEFAULT_STATE[key]
+    
 
 # TODO: randomize agreements from alexa
 
@@ -265,11 +268,50 @@ def concatTexts(a,b):
 #========================
 # Changing routine order methods
 def set_morning_routine_intent(intent, session, state):
+    # TODO: implement echo show/spot screen interaction here?
     # Each of the slots can take one of the activities available or a "done" synonym
     # Find the last fulfilled slot; finish if it says "done" or dialogState is COMPLETED
     
+    # Must match slot names in morning routine intent
+    slots = ["first","second","third"]
+    curr_index = state["morning_routine_elicit_index"]
+
+    # Stop if last response was "DONE"
+    # Advance to next slot if last response was valid
+    if "resolutions" in intent["slots"][slots[curr_index]]:
+        resolution = intent["slots"][slots[curr_index]]["resolutions"]["resolutionsPerAuthority"][0]
+        if resolution["status"]["code"] == "ER_SUCCESS_MATCH":
+            activity = resolution["values"][0]["value"]["name"].upper()
+            
+            # Stop if last response was DONE and we have at least one thing
+            if activity == DONE and curr_index > 0:
+                MORNING_ORDER = state["morning_order_partial"]
+                speech_output = "Okay, sounds good. I've updated your morning routine to " + (",".join([a.lower() for a in MORNING_ORDER]))
+                
+                return build_response({}, build_speechlet_response(
+                    output=speech_output, should_end_session=True))
+            
+            # If last response was DONE at the beginning, do nothing
+            # Otherwise, proceed with gathering the rest
+            if not (activity == DONE and curr_index == 0):
+                state["morning_routine_elicit_index"] += 1
+                curr_index = state["morning_routine_elicit_index"]
+                # Values in JSON schema must match constants for activities in lambda function
+                state["morning_order_partial"] += [activity]
+    
     # Reprompt user if the last response was invalid
-    return build_response({}, build_elicit_response(slot_to_elicit))
+    
+    # TODO: tailor output speech better to the currently chosen activities
+    speech_output = None
+    if curr_index == 0:
+        speech_output = "What do you want to do first?"
+    elif curr_index == 1:
+        speech_output = "What do you want to do second, or is that all?"
+    elif curr_index == 2:
+        speech_output = "What do you want to do third, or is that all?"
+    
+    return build_response({}, build_elicit_response(
+        slot_to_elicit=slots[curr_index], output=speech_output))
     
     # if "value" not in intent["slots"][slot_to_elicit]:
     #     speech_output = "Sure. What's your main focus for tomorrow?"
@@ -391,7 +433,7 @@ def execute_evening_routine_intent(session, state):
     
     reset_state(state)
     
-    prioritiesIndex = EVENING_ORDER.index(PRIORITIES)
+    prioritiesIndex = EVENING_ORDER.index(PRIORITIES) # TODO: what if user doesn't add priorities to routine?
     
     # Build everything up to and including the priorities question
     for i in range(prioritiesIndex+1):
@@ -490,10 +532,13 @@ def on_launch(launch_request, session, state):
     # Dispatch to your skill's launch
     
     # Get user time from API
-    # If before noon:
-    return execute_morning_routine_intent(session, state)
-    # If after noon:
-    # return execute_evening_routine_intent(session, state)
+    
+    ########################################
+    ########################################
+    ########################################
+    
+    # return execute_morning_routine_intent(session, state)
+    return execute_evening_routine_intent(session, state)
 
 
 def on_intent(intent_request, session, state):
@@ -519,7 +564,9 @@ def on_intent(intent_request, session, state):
     
     try:
         return handlers[intent_name](intent, session, state)
-    except KeyError:
+    except Exception as e:
+        # This exception probably came from inside a handler
+        print(e)
         raise ValueError("Invalid intent: "+intent_name)
     
     
