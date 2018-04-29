@@ -1,7 +1,7 @@
 {
     "interactionModel": {
         "languageModel": {
-            "invocationName": "stimulus",
+            "invocationName": "me about my day",
             "intents": [
                 {
                     "name": "AMAZON.CancelIntent",
@@ -18,45 +18,6 @@
                     "samples": []
                 },
                 {
-                    "name": "AddReminderIntent",
-                    "slots": [
-                        {
-                            "name": "reminderContent",
-                            "type": "AMAZON.EventType"
-                        }
-                    ],
-                    "samples": [
-                        "remember that I need to {reminderContent}",
-                        "remember I need to {reminderContent}",
-                        "remind me I need to {reminderContent}",
-                        "remind me that I need to {reminderContent}",
-                        "remember that I have {reminderContent}",
-                        "remember that I have to {reminderContent}",
-                        "remember I have to {reminderContent}",
-                        "remember to {reminderContent}",
-                        "remind me that I have to {reminderContent}",
-                        "remind me that I {reminderContent}",
-                        "remind me I have to {reminderContent}",
-                        "remind me to {reminderContent}"
-                    ]
-                },
-                {
-                    "name": "GetRemindersIntent",
-                    "slots": [],
-                    "samples": [
-                        "tell me the list of my reminders",
-                        "tell me the list of reminders",
-                        "tell me my reminders",
-                        "give me the list of reminders",
-                        "give me the list of my reminders",
-                        "list reminders",
-                        "give me a list of reminders",
-                        "give me a list of my reminders",
-                        "my list of reminders",
-                        "list my reminders"
-                    ]
-                },
-                {
                     "name": "GetMainFocusIntent",
                     "slots": [],
                     "samples": [
@@ -69,6 +30,40 @@
                         "main focus for today",
                         "main focus",
                         "my main focus for today"
+                    ]
+                },
+                {
+                    "name": "GetMorningRoutineIntent",
+                    "slots": [],
+                    "samples": [
+                        "what's my morning routine",
+                        "what's my sunrise routine",
+                        "what's my wake up routine",
+                        "what's my waking routine",
+                        "what does my morning routine look like",
+                        "what does my sunrise routine look like",
+                        "what does my wake up routine look like",
+                        "what does my waking routine look like",
+                        "what does my morning look like"
+                    ]
+                },
+                {
+                    "name": "GetEveningRoutineIntent",
+                    "slots": [],
+                    "samples": [
+                        "what's my bedtime routine",
+                        "what's my night routine",
+                        "what's my end of day routine",
+                        "what's my nighttime routine",
+                        "what's my evening routine",
+                        "what's my afternoon routine",
+                        "what does my bedtime routine look like",
+                        "what does my night routine look like",
+                        "what does my end of day routine look like",
+                        "what does my nighttime routine look like",
+                        "what does my evening routine look like",
+                        "what does my afternoon routine look like",
+                        "what does my evening look like"
                     ]
                 },
                 {
@@ -96,24 +91,105 @@
                     ]
                 },
                 {
-                    "name": "LaunchIntent",
-                    "slots": [],
-                    "samples": []
-                },
-                {
                     "name": "AMAZON.YesIntent",
                     "samples": []
                 },
                 {
-                    "name": "CheckinRefreshPrioritiesIntent",
+                    "name": "AMAZON.NoIntent",
+                    "samples": []
+                },
+                {
+                    "name": "CheckinKeepMainFocusIntent",
+                    "slots": [],
+                    "samples": [
+                        "leave it",
+                        "leave it as it is",
+                        "keep the old one",
+                        "stick with my old main focus",
+                        "stick with my old focus",
+                        "stick with my old one",
+                        "stay with the same focus",
+                        "stay with the same main focus",
+                        "keep my main focus",
+                        "keep it",
+                        "keep it the same",
+                        "keep the same main focus",
+                        "keep the same focus"
+                    ]
+                },
+                {
+                    "name": "CheckinReplaceMainFocusIntent",
+                    "slots": [
+                        {
+                            "name": "newMainFocus",
+                            "type": "AMAZON.EventType",
+                            "samples": [
+                                "{newMainFocus}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "replace the old one",
+                        "replace my focus",
+                        "replace my main focus",
+                        "replace it",
+                        "set a new focus",
+                        "set a new main focus",
+                        "set a new one",
+                        "a new one",
+                        "a new main focus",
+                        "a new focus"
+                    ]
+                },
+                {
+                    "name": "ExecuteEveningRoutineIntent",
                     "slots": [],
                     "samples": [
                         "ask about my day",
                         "ask me about my day"
                     ]
+                },
+                {
+                    "name": "AMAZON.PauseIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ResumeIntent",
+                    "samples": []
                 }
             ],
             "types": []
-        }
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "CheckinReplaceMainFocusIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "newMainFocus",
+                            "type": "AMAZON.EventType",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.364487685416.1431036788818"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.364487685416.1431036788818",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What's your main focus for tomorrow?"
+                    }
+                ]
+            }
+        ]
     }
 }
