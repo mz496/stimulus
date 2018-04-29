@@ -148,14 +148,6 @@
                         "ask about my day",
                         "ask me about my day"
                     ]
-                },
-                {
-                    "name": "AMAZON.PauseIntent",
-                    "samples": []
-                },
-                {
-                    "name": "AMAZON.ResumeIntent",
-                    "samples": []
                 }
             ],
             "types": []

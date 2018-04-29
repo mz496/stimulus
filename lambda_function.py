@@ -43,14 +43,20 @@ def get_name_list(userID):
         return names + " is the only person here in the house."
     else:
         return names + " are here in the house."
+        
+def get_info(userId):
+    response = table.query(
+        KeyConditionExpression=Key('userId').eq(userId)
+    )
+    # expr = "userId = :"+userId
+    # response = table.query(KeyConditionExpression=expr)
+    return response["Items"]
 
-def add_info(userId, mainFocus):
+def add_info(item):
+    # item must be a dict containing the userId key and any other k-v pairs desired
     try:
         response = table.put_item(
-           Item={
-                'userId': userId,
-                'mainFocus': mainFocus
-            }
+           Item=item
         ) 
     except ClientError as e:
         print(e.response)
@@ -130,28 +136,6 @@ def build_elicit_response(output, slot_to_elicit, updated_intent, title=None, re
         }    
     ]
     return result
-    
-    ###############
-    return {
-        'outputSpeech': {
-            'type': 'PlainText',
-            'text': output
-        },
-        'reprompt': {
-            'outputSpeech': {
-                'type': 'PlainText',
-                'text': reprompt_text
-            }
-        },
-        'shouldEndSession': should_end_session,
-        'directives': [
-            {
-                "type": "Dialog.ElicitSlot",
-                "slotToElicit": slot_to_elicit,
-                "updatedIntent": updated_intent
-            }
-        ]
-    }
 
 
 def build_response(session_attributes, speechlet_response):
@@ -183,11 +167,12 @@ REFLECTION = "REFLECTION"
 MEDITATION = "MEDITATION"
 STRETCHING = "STRETCHING"
 MORNING_ORDER = [MEDITATION,STRETCHING,PRIORITIES]
-EVENING_ORDER = [PRIORITIES,REFLECTION,MEDITATION]
+EVENING_ORDER = [REFLECTION,PRIORITIES,MEDITATION]
 state = {
     "question":NO_QUESTION,
-    "before":"<speak></speak>",
-    "after":"<speak></speak>"
+    "evening_routine_before_priorities":"<speak></speak>",
+    "evening_routine_after_priorities":"<speak></speak>",
+    "morning_routine":"<speak></speak>"
 }
 
 def store_thing():
@@ -304,8 +289,8 @@ def get_current_question():
     return state["question"]
 def reset_state(state):
     state["question"] = NO_QUESTION
-    state["before"] = "<speak></speak>"
-    state["after"] = "<speak></speak>"
+    state["evening_routine_before_priorities"] = "<speak></speak>"
+    state["evening_routine_after_priorities"] = "<speak></speak>"
 
 # def execute_evening_routine_intent(intent, session):
 #     session_attributes = {}
@@ -337,14 +322,74 @@ def reset_state(state):
 #         return build_speechlet_response(output=speech_output)
 #     if EVENING_ORDER[current_pos] == REFLECTION:
 #         if 
-#         return build_speechlet_response(output=get_reflection_ssml(), speech_type="SSML")
+#         return build_speechlet_response(output=get_evening_reflection_script(), speech_type="SSML")
 #     if EVENING_ORDER[current_pos] == MEDITATION:
-#         return build_speechlet_response(output=get_meditation_ssml(), speech_type="SSML")
+#         return build_speechlet_response(output=get_evening_meditation_script(), speech_type="SSML")
         
 #     current_pos += 1
 
 # TODO: randomize agreements from alexa
-def get_reflection_ssml(): # TODO: make this different if you had a bad day?
+
+
+def concatTexts(a,b):
+    aStrip = a.strip()
+    bStrip = b.strip()
+    aNoTag = aStrip[7:-8] if aStrip[:7] == "<speak>" else aStrip
+    bNoTag = bStrip[7:-8] if bStrip[:7] == "<speak>" else bStrip
+    return "<speak>"+aNoTag+" "+bNoTag+"</speak>"
+    
+    
+    
+#========================
+# Morning routine parts
+
+def get_morning_meditation_script():
+    speech_output = "Here is some meditation."
+    return speech_output
+
+def get_morning_stretching_script():
+    speech_output = "Here is some stretching."
+    return speech_output
+    
+def get_morning_priorities_script(userId):
+    storedMainFocus = get_info(userId)[0]["mainFocus"]
+    speech_output = "Your main focus for the day is " + storedMainFocus + "."
+    return speech_output
+    
+
+#========================
+# Morning routine methods
+
+def get_morning_routine(state):
+    intro = "Good morning!" # TODO: add name here?
+    outro = "All right, we're ready to start the day! I'll catch up with you in the evening."
+    speech_output = concatTexts(concatTexts(intro, state["morning_routine"]), outro)
+    return build_response({},
+    build_speechlet_response(output=speech_output, should_end_session=True))
+
+def execute_morning_routine_intent(session, state):
+    routineTexts = {
+        MEDITATION: get_morning_meditation_script(),
+        STRETCHING: get_morning_stretching_script(),
+        PRIORITIES: get_morning_priorities_script(session["user"]["userId"])
+    }
+    # All of these keys must exist in the morning order list
+
+    reset_state(state)
+    
+    # Build morning routine
+    for activity in MORNING_ORDER:
+        state["morning_routine"] = concatTexts(state["morning_routine"],routineTexts[activity])
+        
+    return get_morning_routine(state)
+
+
+
+
+
+#=============
+# Evening routine parts
+def get_evening_reflection_script(): # TODO: make this different if you had a bad day?
     speech_output = \
     """<speak>
         Think about something that happened today that you’re grateful for.
@@ -360,23 +405,40 @@ def get_reflection_ssml(): # TODO: make this different if you had a bad day?
         """
     return speech_output
     
-def get_meditation_ssml():
+def get_evening_meditation_script():
     speech_output = "This is some meditation."
     return speech_output
+    
+def get_evening_priorities_script():
+    return "Did you make progress on your priorities today?"
 
-def concatTexts(a,b):
-    aStrip = a.strip()
-    bStrip = b.strip()
-    aNoTag = aStrip[7:-8] if aStrip[:7] == "<speak>" else aStrip
-    bNoTag = bStrip[7:-8] if bStrip[:7] == "<speak>" else bStrip
-    return "<speak>"+aNoTag+" "+bNoTag+"</speak>"
+
+
+
+
+
+
+#========================
+# Evening routine methods
+
+def get_beginning_evening_routine(state):
+    intro = "Good evening. "
+    speech_output = concatTexts(intro, state["evening_routine_before_priorities"])
+    return build_response({}, 
+    build_speechlet_response(output=speech_output))
+
+def get_ending_evening_routine(prepend, state):
+    outro = "We're all done for today. Get a good night's rest tonight, and I'll catch up with you in the morning!"
+    speech_output = concatTexts(concatTexts(prepend, state["evening_routine_after_priorities"]), outro)
+    return build_response({}, build_speechlet_response(output=speech_output, should_end_session=True))
 
 def execute_evening_routine_intent(session, state):
     routineTexts = {
-        REFLECTION: get_reflection_ssml(),
-        MEDITATION: get_meditation_ssml(),
-        PRIORITIES: "Did you make progress on your priorities today?"
+        REFLECTION: get_evening_reflection_script(),
+        MEDITATION: get_evening_meditation_script(),
+        PRIORITIES: get_evening_priorities_script()
     }
+    # All of these keys must exist in the evening order list
     
     reset_state(state)
     
@@ -384,37 +446,32 @@ def execute_evening_routine_intent(session, state):
     
     # Build everything up to and including the priorities question
     for i in range(prioritiesIndex+1):
-        state["before"] = concatTexts(state["before"],routineTexts[EVENING_ORDER[i]])
+        state["evening_routine_before_priorities"] = concatTexts(state["evening_routine_before_priorities"],routineTexts[EVENING_ORDER[i]])
         
-    print("BEFORE: "+state["before"])
+    print("BEFORE: "+state["evening_routine_before_priorities"])
     # Build everything after the priorities question
     for i in range(prioritiesIndex+1,len(EVENING_ORDER)):
-        state["after"] = concatTexts(state["after"],routineTexts[EVENING_ORDER[i]])
-    print("AFTER: "+state["after"])
+        state["evening_routine_after_priorities"] = concatTexts(state["evening_routine_after_priorities"],routineTexts[EVENING_ORDER[i]])
+    print("AFTER: "+state["evening_routine_after_priorities"])
         
-    intro = "Good evening. "
-    speech_output = concatTexts(intro, state["before"])
     state["question"] = CHECKIN_REFRESH_PRIORITIES
-    print(build_response({}, 
-    build_speechlet_response(output=speech_output)))
-    return build_response({}, 
-    build_speechlet_response(output=speech_output))
-
-# def refresh_priorities_intent(intent, session):
-#     set_current_question(CHECKIN_REFRESH_PRIORITIES)
-#     speech_output = "Did you make good progress on your priorities today?"
-#     return build_response({}, build_speechlet_response(
-#         output=speech_output))
+    # print(build_response({}, 
+    # build_speechlet_response(output=speech_output)))
+    # return build_response({}, 
+    # build_speechlet_response(output=speech_output))
+    return get_beginning_evening_routine(state)
 
 
 #==================================
+# Request main focus info methods
+
 def keep_main_focus_intent(intent, session):
     # Only trigger if we are in the right place in the session
     if get_current_question() == CHECKIN_KEEP_OR_REPLACE_FOCUS:
         set_current_question(NO_QUESTION)
-        speech_output = "Okay, I'll make tomorrow's main focus the same as today's."
-        return build_response({}, build_speechlet_response(output=speech_output))
-            
+        prepend = "Okay, I'll make tomorrow's main focus the same as today's."
+        return get_ending_evening_routine(prepend, state)
+
     raise ValueError("Question value expected: "+CHECKIN_KEEP_OR_REPLACE_FOCUS+", got: "+get_current_question())
             
 def replace_main_focus_intent(intent, session):
@@ -427,14 +484,15 @@ def replace_main_focus_intent(intent, session):
                 output=speech_output, slot_to_elicit=slot_to_elicit, updated_intent=intent))
         else:
             print("WANT TO STORE THIS: "+str(intent))
-            add_info(session["user"]["userId"], intent["slots"][slot_to_elicit]["value"])
+            add_info({
+                "userId": session["user"]["userId"],
+                "mainFocus":intent["slots"][slot_to_elicit]["value"]
+            })
             set_current_question(NO_QUESTION)
             prepend = "Sounds good. I'll make a note of that." # TODO: make a card in alexa app for this?
             
             # Execute everything after the priorities, and end the session
-            outro = "We're all done for today. Get a good night's rest tonight, and I'll catch up with you in the morning!"
-            speech_output = concatTexts(concatTexts(prepend, state["after"]), outro)
-            return build_response({}, build_speechlet_response(output=speech_output, should_end_session=True))
+            return get_ending_evening_routine(prepend, state)
     
     raise ValueError("Question value expected: "+CHECKIN_KEEP_OR_REPLACE_FOCUS+", got: "+get_current_question())
 #=========================================
@@ -448,7 +506,7 @@ def handle_yes_intent(intent, session):
         return build_response({}, build_speechlet_response(
             output=speech_output))
     else:
-        speech_output = "I don't know what question this is."
+        speech_output = "Sorry, I'm not sure about that."
         return build_response({}, build_speechlet_response(
             output=speech_output))
 
@@ -460,7 +518,7 @@ def handle_no_intent(intent, session):
         return build_response({}, build_speechlet_response(
             output=speech_output))
     else:
-        speech_output = "I don't know what question this is."
+        speech_output = "Sorry, I'm not sure about that."
         return build_response({}, build_speechlet_response(
             output=speech_output))
 
@@ -481,8 +539,12 @@ def on_launch(launch_request, session, state):
     print("on_launch "+str(launch_request)+" "+str(session)+" requestId=" + launch_request['requestId'] +
           ", sessionId=" + session['sessionId'])
     # Dispatch to your skill's launch
-    return execute_evening_routine_intent(session, state)
-    # return get_welcome_response(None, session)
+    
+    # Get user time from API
+    # If before noon:
+    return execute_morning_routine_intent(session, state)
+    # If after noon:
+    # return execute_evening_routine_intent(session, state)
 
 
 def on_intent(intent_request, session):
