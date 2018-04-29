@@ -70,24 +70,24 @@
                     "name": "SetMorningRoutineIntent",
                     "slots": [
                         {
-                            "name": "first",
+                            "name": "firstMorning",
                             "type": "MorningRoutineActivity",
                             "samples": [
-                                "{first}"
+                                "{firstMorning}"
                             ]
                         },
                         {
-                            "name": "second",
+                            "name": "secondMorning",
                             "type": "MorningRoutineActivity",
                             "samples": [
-                                "{second}"
+                                "{secondMorning}"
                             ]
                         },
                         {
-                            "name": "third",
+                            "name": "thirdMorning",
                             "type": "MorningRoutineActivity",
                             "samples": [
-                                "{third}"
+                                "{thirdMorning}"
                             ]
                         }
                     ],
@@ -102,7 +102,29 @@
                 },
                 {
                     "name": "SetEveningRoutineIntent",
-                    "slots": [],
+                    "slots": [
+                        {
+                            "name": "firstEvening",
+                            "type": "EveningRoutineActivity",
+                            "samples": [
+                                "{firstEvening}"
+                            ]
+                        },
+                        {
+                            "name": "secondEvening",
+                            "type": "EveningRoutineActivity",
+                            "samples": [
+                                "{secondEvening}"
+                            ]
+                        },
+                        {
+                            "name": "thirdEvening",
+                            "type": "EveningRoutineActivity",
+                            "samples": [
+                                "{thirdEvening}"
+                            ]
+                        }
+                    ],
                     "samples": [
                         "edit the evening routine",
                         "edit my evening routine",
@@ -146,6 +168,10 @@
                             "name": "newMainFocus",
                             "type": "AMAZON.EventType",
                             "samples": [
+                                "my new focus is {newMainFocus}",
+                                "my new main focus is {newMainFocus}",
+                                "my main focus is {newMainFocus}",
+                                "my focus is {newMainFocus}",
                                 "{newMainFocus}"
                             ]
                         }
@@ -170,6 +196,73 @@
                         "ask about my day",
                         "ask me about my day"
                     ]
+                },
+                {
+                    "name": "NewUserCollectInfoIntent",
+                    "slots": [
+                        {
+                            "name": "firstName",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "samples": [
+                                "you should call me {firstName}",
+                                "you can address me by {firstName}",
+                                "you can address me as {firstName}",
+                                "I'm {firstName}",
+                                "call me {firstName}",
+                                "my name is {firstName}",
+                                "you can call me {firstName}",
+                                "{firstName}"
+                            ]
+                        },
+                        {
+                            "name": "initialMainFocus",
+                            "type": "AMAZON.EventType",
+                            "samples": [
+                                "my focus is {initialMainFocus}",
+                                "{initialMainFocus}",
+                                "my main focus is {initialMainFocus}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "get me set up",
+                        "set me up",
+                        "setup",
+                        "get set up",
+                        "set up"
+                    ]
+                },
+                {
+                    "name": "SetNameIntent",
+                    "slots": [
+                        {
+                            "name": "newFirstName",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "samples": [
+                                "you should call me {newFirstName}",
+                                "you can address me by {newFirstName}",
+                                "you can address me as {newFirstName}",
+                                "I'm {newFirstName}",
+                                "call me {newFirstName}",
+                                "my name is {newFirstName}",
+                                "you can call me {newFirstName}",
+                                "{newFirstName}",
+                                "my new name is {newFirstName}",
+                                "you can call me {newFirstName} instead",
+                                "call me {newFirstName} instead"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "edit what stimulus calls me",
+                        "edit what alexa calls me",
+                        "edit my nickname",
+                        "edit my name",
+                        "change what stimulus calls me",
+                        "change what alexa calls me",
+                        "change my nickname",
+                        "change my name"
+                    ]
                 }
             ],
             "types": [
@@ -180,6 +273,13 @@
                             "name": {
                                 "value": "priorities",
                                 "synonyms": [
+                                    "finish up with refreshing my focus",
+                                    "finish up by refreshing my focus",
+                                    "finish up by refreshing my main focus",
+                                    "finish up with refreshing my main focus",
+                                    "refresh my priorities",
+                                    "refresh my main focus",
+                                    "review my main focus",
                                     "review priorities",
                                     "my priorities",
                                     "walk through priorities",
@@ -193,8 +293,12 @@
                         },
                         {
                             "name": {
-                                "value": "stretches",
+                                "value": "stretching",
                                 "synonyms": [
+                                    "finish up with stretching",
+                                    "finish up with some stretching",
+                                    "do some stretching",
+                                    "do some stretches",
                                     "stretch",
                                     "stretching"
                                 ]
@@ -204,6 +308,75 @@
                             "name": {
                                 "value": "meditation",
                                 "synonyms": [
+                                    "finish up with meditation",
+                                    "finish up with some meditation",
+                                    "do some meditating",
+                                    "do some meditation",
+                                    "meditate",
+                                    "meditating"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "done",
+                                "synonyms": [
+                                    "that's okay",
+                                    "that's good",
+                                    "that's fine",
+                                    "i'm okay",
+                                    "i'm finished",
+                                    "i'm fine",
+                                    "i'm good",
+                                    "finish",
+                                    "finish setting up",
+                                    "that's it",
+                                    "that's all",
+                                    "i'm done"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "EveningRoutineActivity",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "priorities",
+                                "synonyms": [
+                                    "review progress on my main focus",
+                                    "review progress",
+                                    "review my progress",
+                                    "review my main focus",
+                                    "review priorities",
+                                    "my priorities",
+                                    "walk through priorities",
+                                    "go through priorities",
+                                    "focus",
+                                    "main focus",
+                                    "my focus",
+                                    "my main focus"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "reflection",
+                                "synonyms": [
+                                    "do some reflecting",
+                                    "do some reflection",
+                                    "reflecting",
+                                    "reflect"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "meditation",
+                                "synonyms": [
+                                    "do some meditating",
+                                    "do some meditation",
                                     "meditate",
                                     "meditating"
                                 ]
@@ -242,9 +415,10 @@
                         {
                             "name": "newMainFocus",
                             "type": "AMAZON.EventType",
-                            "confirmationRequired": false,
+                            "confirmationRequired": true,
                             "elicitationRequired": true,
                             "prompts": {
+                                "confirmation": "Confirm.Slot.1312859594657.30329633299",
                                 "elicitation": "Elicit.Slot.364487685416.1431036788818"
                             }
                         }
@@ -256,30 +430,108 @@
                     "prompts": {},
                     "slots": [
                         {
-                            "name": "first",
+                            "name": "firstMorning",
                             "type": "MorningRoutineActivity",
                             "confirmationRequired": false,
                             "elicitationRequired": true,
                             "prompts": {
-                                "elicitation": "Elicit.Slot.1204958508339.1039049616113"
+                                "elicitation": "Elicit.Slot.748006270093.218095780883"
                             }
                         },
                         {
-                            "name": "second",
+                            "name": "secondMorning",
                             "type": "MorningRoutineActivity",
                             "confirmationRequired": false,
                             "elicitationRequired": true,
                             "prompts": {
-                                "elicitation": "Elicit.Slot.1204958508339.1449207184363"
+                                "elicitation": "Elicit.Slot.748006270093.895967694437"
                             }
                         },
                         {
-                            "name": "third",
+                            "name": "thirdMorning",
                             "type": "MorningRoutineActivity",
                             "confirmationRequired": false,
                             "elicitationRequired": true,
                             "prompts": {
-                                "elicitation": "Elicit.Slot.1204958508339.542191589350"
+                                "elicitation": "Elicit.Slot.748006270093.553387517440"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "SetEveningRoutineIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "firstEvening",
+                            "type": "EveningRoutineActivity",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1366735269118.368093274696"
+                            }
+                        },
+                        {
+                            "name": "secondEvening",
+                            "type": "EveningRoutineActivity",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1366735269118.898204479848"
+                            }
+                        },
+                        {
+                            "name": "thirdEvening",
+                            "type": "EveningRoutineActivity",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1366735269118.60028443454"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "NewUserCollectInfoIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "firstName",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.328862723705.958292001057",
+                                "elicitation": "Elicit.Slot.661999072760.1264877204737"
+                            }
+                        },
+                        {
+                            "name": "initialMainFocus",
+                            "type": "AMAZON.EventType",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.328862723705.1304305732534",
+                                "elicitation": "Elicit.Slot.661999072760.795055653423"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "SetNameIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "newFirstName",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.1210732804795.590192384156",
+                                "elicitation": "Elicit.Slot.817501644530.1043085724085"
                             }
                         }
                     ]
@@ -292,12 +544,12 @@
                 "variations": [
                     {
                         "type": "PlainText",
-                        "value": "What's your main focus for tomorrow?"
+                        "value": "What's your new main focus for tomorrow?"
                     }
                 ]
             },
             {
-                "id": "Elicit.Slot.1204958508339.1039049616113",
+                "id": "Elicit.Slot.748006270093.218095780883",
                 "variations": [
                     {
                         "type": "PlainText",
@@ -306,7 +558,7 @@
                 ]
             },
             {
-                "id": "Elicit.Slot.1204958508339.1449207184363",
+                "id": "Elicit.Slot.748006270093.895967694437",
                 "variations": [
                     {
                         "type": "PlainText",
@@ -315,11 +567,169 @@
                 ]
             },
             {
-                "id": "Elicit.Slot.1204958508339.542191589350",
+                "id": "Elicit.Slot.748006270093.553387517440",
                 "variations": [
                     {
                         "type": "PlainText",
                         "value": "What do you want to do third?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1366735269118.368093274696",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want to do first?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1366735269118.898204479848",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want to do second?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1366735269118.60028443454",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want to do third?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.661999072760.795055653423",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Hi there {firstName} . Now, let's keep track of your priorities. What's your main focus for tomorrow?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Hey there {firstName} . Now, let's keep track of your priorities. What's your main focus for tomorrow?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Hi {firstName} . Now, let's keep track of your priorities. What's your main focus for tomorrow?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Good to meet you, {firstName} . Now, let's keep track of your priorities. What's your main focus for tomorrow?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.661999072760.1264877204737",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Great. To start, I'd like a first name to call you by. How should I address you?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Great. To start, I'd like a first name to call you by. What can I call you?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Great. To start, I'd like a first name to call you by. What should I call you?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.328862723705.958292001057",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Okay. I should call you {firstName} , right?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Okay. You said {firstName} , right?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Okay. Just to be sure, that's {firstName} , right?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.328862723705.1304305732534",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "You said your main focus was {initialMainFocus} , right?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.1312859594657.30329633299",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "You said {newMainFocus} , right?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Your new main focus is {newMainFocus} , right?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Your main focus for tomorrow is {newMainFocus} , right?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.817501644530.1043085724085",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want your name to be instead?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What should your new name be?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What can I call you?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What do you want your new name to be?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What should I call you?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What should I call you instead?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What will your new name be?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.1210732804795.590192384156",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Okay. I should call you {newFirstName} , right?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Okay. You said {newFirstName} , right?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Okay. Just to be sure, that's {newFirstName} , right?"
                     }
                 ]
             }

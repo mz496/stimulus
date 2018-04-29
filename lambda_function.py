@@ -55,14 +55,50 @@ def get_info(userId):
 def add_info(item):
     # item must be a dict containing the userId key and any other k-v pairs desired
     try:
-        response = table.put_item(
-           Item=item
-        ) 
+        if len(get_info(item["userId"])) == 0:
+            response = table.put_item(
+               Item=item
+            )
+        else:
+            keys = []
+            for key in item:
+                if key != "userId":
+                    keys += [key]
+            update_expr_map = {}
+            
+            # {"firstName": ":val1" ...}
+            for i in range(len(keys)):
+                update_expr_map[keys[i]] = ":val{0}".format(i+1)
+                
+            # {":val1": "bob" ...}
+            update_expr_attr_vals_map = {}
+            for i in range(len(keys)):
+                EAV_key = ":val{0}".format(i+1)
+                update_expr_attr_vals_map[EAV_key] = item[keys[i]]
+                
+            # SET firstName = :val1, ...
+            update_expr = "SET " + ", ".join(["{0} = {1}".format(key,update_expr_map[key]) for key in update_expr_map])
+            print(update_expr)
+            print(update_expr_attr_vals_map)
+            response = table.update_item(
+                Key={
+                    "userId":item["userId"]
+                },
+                UpdateExpression=update_expr,
+                ExpressionAttributeValues=update_expr_attr_vals_map
+            )
     except ClientError as e:
         print(e.response)
         return e.response['Error']['Code']        
         
     return None
+    
+# def update_info(item):
+#     try:
+        
+#     except ClientError as e:
+#         print(e.response)
+#         return e.response["Error"]["Code"]
 
 def delete_name(userID, name):
     try:
@@ -155,18 +191,6 @@ def build_response(session_attributes, speechlet_response):
     }
 
 
-# --------------- Audio player required stuff ----------------------------------
-# def handle_pause_request(intent, session):
-# def handle_resume_request(intent, session):
-# def handle_loop_off_request(intent, session):
-# def handle_loop_on_request(intent, session):
-# def handle_next_request(intent, session):
-# def handle_prev_request(intent, session):
-# def handle_repeat_request(intent, session):
-# def handle_shuf_off_request(intent, session):
-# def handle_shuf_on_request(intent, session):
-# def handle_start_over_request(intent, session):
-
 # --------------- Functions that control the skill's behavior ------------------
 
 # ==========================
@@ -175,13 +199,55 @@ CHECKIN_REFRESH_PRIORITIES = "CHECKIN_REFRESH_PRIORITIES"
 CHECKIN_KEEP_OR_REPLACE_FOCUS = "CHECKIN_KEEP_OR_REPLACE_FOCUS"
 NO_QUESTION = "_"
 
+MORNING = "MORNING"
+EVENING = "EVENING"
 PRIORITIES = "PRIORITIES"
 REFLECTION = "REFLECTION"
 MEDITATION = "MEDITATION"
 STRETCHING = "STRETCHING"
 DONE = "DONE"
-MORNING_ORDER = [MEDITATION,STRETCHING,PRIORITIES]
-EVENING_ORDER = [REFLECTION,PRIORITIES,MEDITATION]
+
+# For reading out long representations of activities
+# SPOKEN_REPRS[MORNING/EVENING].keys() represents set of all possible morning/evening activities
+# Must be infinitive verb forms to list out e.g. "Do you want to ..."
+SPOKEN_REPRS = {
+    MORNING: {
+        MEDITATION: "meditate for a short while",
+        STRETCHING: "do some morning stretches",
+        PRIORITIES: "refresh your main focus for the day ahead",
+    },
+    EVENING: {
+        MEDITATION: "meditate for a short while",
+        REFLECTION: "do some end-of-day reflection",
+        PRIORITIES: "review progress on your main focus for the past day",
+    }
+}
+# For reading out short representations of activities, e.g. if the user needs a quick recap
+# Must be gerund/noun forms to list out e.g. "Your routine involves ..."
+# All keys must have corresponding ones in spoken reprs
+SHORT_SPOKEN_REPRS = {
+    MORNING: {
+        MEDITATION: "meditation",
+        STRETCHING: "stretching",
+        PRIORITIES: "refreshing your main focus",
+    },
+    EVENING: {
+        MEDITATION: "meditation",
+        REFLECTION: "reflection",
+        PRIORITIES: "reviewing progress on your main focus",
+    }
+}
+# Must have the same number of activity slots for the number of keys in [SHORT_]SPOKEN_REPRS[MORNING/EVENING]
+ACTIVITY_SLOTS = {
+    MORNING: ["firstMorning","secondMorning","thirdMorning"],
+    EVENING: ["firstEvening","secondEvening","thirdEvening"]
+}
+
+# Default values
+ORDERS = {
+    MORNING: [STRETCHING,MEDITATION,PRIORITIES],
+    EVENING: [PRIORITIES,REFLECTION,MEDITATION]
+}
 
 # For reset purposes only, do not modify
 DEFAULT_STATE = {
@@ -189,10 +255,8 @@ DEFAULT_STATE = {
     "evening_routine_before_priorities":"<speak></speak>",
     "evening_routine_after_priorities":"<speak></speak>",
     "morning_routine":"<speak></speak>",
-    "morning_routine_elicit_index":0,
-    "evening_routine_elicit_index":0,
-    "morning_order_partial": [],
-    "evening_order_partial": [],
+    "set_routine_elicit_index":0,
+    "set_order_partial":[],
 }
 
 # Create modifiable copy
@@ -246,6 +310,9 @@ def get_main_focus_intent_response(intent, session, state):
     return build_response(session_attributes, build_speechlet_response(
         output=speech_output))
         
+    # TODO: make sure this is robust against if there is no main focus i.e. firstrun
+    # TODO: show this on the screen?
+        
 #================================
 # Helpers
 
@@ -254,9 +321,9 @@ def reset_state(state):
         state[key] = DEFAULT_STATE[key]
     
 
-# TODO: randomize agreements from alexa
+# TODO: randomize agreements et al. from alexa
 
-
+# Concatenates either PlainText or SSML (for either param) into a single SSML entity
 def concatTexts(a,b):
     aStrip = a.strip()
     bStrip = b.strip()
@@ -264,17 +331,122 @@ def concatTexts(a,b):
     bNoTag = bStrip[7:-8] if bStrip[:7] == "<speak>" else bStrip
     return "<speak>"+aNoTag+" "+bNoTag+"</speak>"
     
+# Returns text representation of a list of items, where the last item is separated by last_joiner
+def sequentialize(L, last_joiner="and"):
+    if len(L) == 1:
+        return L[0]
+    elif len(L) == 2:
+        return "{0} {1} {2}".format(L[0], last_joiner, L[1])
+    else:
+        return "{0}, {1} {2}".format(", ".join(L[:-1]), last_joiner, L[-1])
+
+# Convert constant for time of day into a DB column name
+def get_routine_key_name(time_of_day):
+    return time_of_day.lower() + "Routine"
+
+
+
+#===================================
+# New user
+def new_user_intro(session, state):
+    # Put values into DB
+    speech_output = "Welcome. This is Stimulus, your morning and evening assistant. \
+    I can help you stay focused and guide you through some relaxation routines in the morning and evening. \
+    Hmm... I don't think you've used Stimulus before. Just ask Stimulus to set up and we'll get you up and running in no time."
     
+    return build_response({}, build_speechlet_response(
+        output=speech_output))
+        
+    # return build_response({}, build_elicit_response(
+    #     slot_to_elicit="firstName", output=speech_output))
+        
+    # add_info({
+    #     "userId": session["user"]["userId"],
+    #     "firstName": first_name,
+    #     "mainFocus": main_focus,
+    #     get_routine_key_name(MORNING): ORDERS[MORNING],
+    #     get_routine_key_name(EVENING): ORDERS[EVENING]
+    # })
+
+    # Name column?
+
+def new_user_collect_info_intent(intent_request, session, state):
+    if intent_request["dialogState"] == "COMPLETED":
+        morning_default_activities_string = sequentialize([SHORT_SPOKEN_REPRS[MORNING][activity] for activity in ORDERS[MORNING]])
+        evening_default_activities_string = sequentialize([SHORT_SPOKEN_REPRS[EVENING][activity] for activity in ORDERS[EVENING]])
+        speech_output = "Great. Start off your morning with me tomorrow and I'll guide you through {0}.\
+        Check back with me tomorrow evening and I'll guide you through {1}.\
+        Let me know if you want to skip or rearrange your routines, change your name, or get a reminder of your main focus.".format(
+            morning_default_activities_string, evening_default_activities_string)
+            
+        add_info({
+            "userId": session["user"]["userId"],
+            get_routine_key_name(MORNING): ORDERS[MORNING],
+            get_routine_key_name(EVENING): ORDERS[EVENING]
+        })
+            
+        return build_response({}, build_speechlet_response(
+            output=speech_output, should_end_session=True))
+    else:
+        # Store confirmed pairs one by one
+        for slot_name in intent_request["intent"]["slots"]:
+            slot_info = intent_request["intent"]["slots"][slot_name]
+            if slot_info["confirmationStatus"] == "CONFIRMED":
+                add_info({
+                    "userId": session["user"]["userId"],
+                    slot_name: slot_info["value"]
+                })
+        return build_response({}, build_delegate_response())
+
+
+
 #========================
 # Changing routine order methods
-def set_morning_routine_intent(intent, session, state):
+
+def get_remaining_activities_long_text(partial, full, time_of_day):
+    # Takes two sets, returns a nice text rep of full-partial
+    # For allowing the user to decide among remaining options when setting routine
+    diff = list(full - partial)
+    diff_reprs = [SPOKEN_REPRS[time_of_day][activity] for activity in diff]
+    if len(diff) >= 3:
+        return """<speak>
+            {3}What do you want to do <say-as interpret-as="ordinal">{0}</say-as>{2}? You can {1}.
+            </speak>""".format(
+                str(len(partial)+1),
+                sequentialize(diff_reprs, last_joiner="or"),
+                ", or is that all" if len(partial) > 0 else "", # Cases for empty/nonempty partial list
+                "Okay. " if len(partial) > 0 else ""
+                )
+    elif len(diff) == 2:
+        return """<speak>
+            Sure thing. Do you want to {0} or {1} <say-as interpret-as="ordinal">{2}</say-as>, or is that all?
+            </speak>""".format(
+                diff_reprs[0], diff_reprs[1], str(len(partial)+1))
+        # Let's assume we will always have at least 2 activities for each time of day, so we know the user can't end early here
+    elif len(diff) == 1:
+        return """<speak>
+            No problem. Do you want to {0} to finish up, or is that all?
+            </speak>""".format(diff_reprs[0])
+    else:
+        # Bad things happen if we get here
+        return None
+        
+def get_final_set_routine_text(time_of_day):
+    short_reprs = [SHORT_SPOKEN_REPRS[time_of_day][activity] for activity in ORDERS[time_of_day]]
+    return "Okay, sounds good. I've updated your {0} routine to include {1}, in that order.".format(
+        time_of_day.lower(),
+        sequentialize(short_reprs))
+        
+def set_routine_intent(intent, session, state, time_of_day):
     # TODO: implement echo show/spot screen interaction here?
     # Each of the slots can take one of the activities available or a "done" synonym
-    # Find the last fulfilled slot; finish if it says "done" or dialogState is COMPLETED
+
+    slots = ACTIVITY_SLOTS[time_of_day]
+    curr_index = state["set_routine_elicit_index"]
     
-    # Must match slot names in morning routine intent
-    slots = ["first","second","third"]
-    curr_index = state["morning_routine_elicit_index"]
+    # If we just started, make sure we start fresh
+    if curr_index == 0:
+        state["set_order_partial"] = []
 
     # Stop if last response was "DONE"
     # Advance to next slot if last response was valid
@@ -283,10 +455,19 @@ def set_morning_routine_intent(intent, session, state):
         if resolution["status"]["code"] == "ER_SUCCESS_MATCH":
             activity = resolution["values"][0]["value"]["name"].upper()
             
+            # Stop if we exhausted everything, or            
             # Stop if last response was DONE and we have at least one thing
-            if activity == DONE and curr_index > 0:
-                MORNING_ORDER = state["morning_order_partial"]
-                speech_output = "Okay, sounds good. I've updated your morning routine to " + (",".join([a.lower() for a in MORNING_ORDER]))
+            if curr_index == len(SPOKEN_REPRS[time_of_day].keys()) or activity == DONE and curr_index > 0:
+                ORDERS[time_of_day] = state["set_order_partial"]
+                add_info({
+                    "userId": session["user"]["userId"],
+                    get_routine_key_name(time_of_day): ORDERS[time_of_day]
+                })
+                speech_output = get_final_set_routine_text(time_of_day)
+                # speech_output = "Okay, sounds good. I've updated your morning routine to " + (",".join([a.lower() for a in MORNING_ORDER]))
+                
+                state["set_routine_elicit_index"] = 0
+                state["set_order_partial"] = []
                 
                 return build_response({}, build_speechlet_response(
                     output=speech_output, should_end_session=True))
@@ -294,42 +475,20 @@ def set_morning_routine_intent(intent, session, state):
             # If last response was DONE at the beginning, do nothing
             # Otherwise, proceed with gathering the rest
             if not (activity == DONE and curr_index == 0):
-                state["morning_routine_elicit_index"] += 1
-                curr_index = state["morning_routine_elicit_index"]
+                state["set_routine_elicit_index"] += 1
+                curr_index = state["set_routine_elicit_index"]
                 # Values in JSON schema must match constants for activities in lambda function
-                state["morning_order_partial"] += [activity]
+                state["set_order_partial"] += [activity]
     
     # Reprompt user if the last response was invalid
     
-    # TODO: tailor output speech better to the currently chosen activities
-    speech_output = None
-    if curr_index == 0:
-        speech_output = "What do you want to do first?"
-    elif curr_index == 1:
-        speech_output = "What do you want to do second, or is that all?"
-    elif curr_index == 2:
-        speech_output = "What do you want to do third, or is that all?"
-    
+    partial = set(state["set_order_partial"])
+    full = set(SPOKEN_REPRS[time_of_day].keys())
+    print(partial,full)
+    speech_output = get_remaining_activities_long_text(partial, full, time_of_day)
+
     return build_response({}, build_elicit_response(
         slot_to_elicit=slots[curr_index], output=speech_output))
-    
-    # if "value" not in intent["slots"][slot_to_elicit]:
-    #     speech_output = "Sure. What's your main focus for tomorrow?"
-    #     return build_response({}, build_delegate_response()))
-    # else:
-    #     print("WANT TO STORE THIS: "+str(intent))
-    #     add_info({
-    #         "userId": session["user"]["userId"],
-    #         "mainFocus":intent["slots"][slot_to_elicit]["value"]
-    #     })
-    #     set_current_question(NO_QUESTION)
-    #     prepend = "Sounds good. I'll make a note of that." # TODO: make a card in alexa app for this?
-        
-    #     # Execute everything after the priorities, and end the session
-    #     return get_ending_evening_routine(prepend, state)
-    
-def set_evening_routine_intent(intent, session, state):
-    pass
     
 #========================
 # Morning routine parts
@@ -362,14 +521,14 @@ def execute_morning_routine_intent(session, state):
     routineTexts = {
         MEDITATION: get_morning_meditation_script(),
         STRETCHING: get_morning_stretching_script(),
-        PRIORITIES: get_morning_priorities_script(session["user"]["userId"]) #TODO: This will fail if user has never used skill before
+        PRIORITIES: get_morning_priorities_script(session["user"]["userId"])
     }
     # All of these keys must exist in the morning order list
 
     reset_state(state)
     
     # Build morning routine
-    for activity in MORNING_ORDER:
+    for activity in ORDERS[MORNING]:
         state["morning_routine"] = concatTexts(state["morning_routine"],routineTexts[activity])
         
     return get_morning_routine(state)
@@ -377,7 +536,7 @@ def execute_morning_routine_intent(session, state):
 
 
 
-
+# TODO: this won't trigger from launch intent, need to make a separate evening launch intent
 #=============
 # Evening routine parts
 def get_evening_reflection_script(): # TODO: make this different if you had a bad day?
@@ -433,17 +592,17 @@ def execute_evening_routine_intent(session, state):
     
     reset_state(state)
     
-    prioritiesIndex = EVENING_ORDER.index(PRIORITIES) # TODO: what if user doesn't add priorities to routine?
+    prioritiesIndex = ORDERS[EVENING].index(PRIORITIES) # TODO: what if user doesn't add priorities to routine?
     
     # Build everything up to and including the priorities question
     for i in range(prioritiesIndex+1):
-        state["evening_routine_before_priorities"] = concatTexts(state["evening_routine_before_priorities"],routineTexts[EVENING_ORDER[i]])
+        state["evening_routine_before_priorities"] = concatTexts(state["evening_routine_before_priorities"],routineTexts[ORDERS[EVENING][i]])
         
-    print("BEFORE: "+state["evening_routine_before_priorities"])
+    # print("BEFORE: "+state["evening_routine_before_priorities"])
     # Build everything after the priorities question
-    for i in range(prioritiesIndex+1,len(EVENING_ORDER)):
-        state["evening_routine_after_priorities"] = concatTexts(state["evening_routine_after_priorities"],routineTexts[EVENING_ORDER[i]])
-    print("AFTER: "+state["evening_routine_after_priorities"])
+    for i in range(prioritiesIndex+1,len(ORDERS[EVENING])):
+        state["evening_routine_after_priorities"] = concatTexts(state["evening_routine_after_priorities"],routineTexts[ORDERS[EVENING][i]])
+    # print("AFTER: "+state["evening_routine_after_priorities"])
         
     state["question"] = CHECKIN_REFRESH_PRIORITIES
     # print(build_response({}, 
@@ -474,30 +633,32 @@ def replace_main_focus_intent(intent, session, state):
             return build_response({}, build_elicit_response(
                 slot_to_elicit=slot_to_elicit, output=speech_output))
         else:
-            print("WANT TO STORE THIS: "+str(intent))
+            # print("WANT TO STORE THIS: "+str(intent))
             add_info({
                 "userId": session["user"]["userId"],
                 "mainFocus":intent["slots"][slot_to_elicit]["value"]
             })
             state["question"] = NO_QUESTION
-            prepend = "Sounds good. I'll make a note of that." # TODO: make a card in alexa app for this?
+            prepend = "Sounds good. I'll make a note of that here." # TODO: make a card in alexa app for this? TODO: make confirmation with user's name?
             
             # Execute everything after the priorities, and end the session
             return get_ending_evening_routine(prepend, state)
     
     raise ValueError("Question value expected: "+CHECKIN_KEEP_OR_REPLACE_FOCUS+", got: "+state["question"])
-#=========================================
     
+#=========================================
+# Generic YES/NO intents    
+
 # Determine what to do with this intent based on where we are in the session
 def handle_yes_intent(intent, session, state):
     if state["question"] == CHECKIN_REFRESH_PRIORITIES:
         state["question"] = NO_QUESTION
-        speech_output = "Great work today! Do you want to keep it the same or set a new one?"
+        speech_output = "Great work today! Do you want to keep it the same or set a new one?" # TODO: speechcons to make this celebration more interesting
         state["question"] = CHECKIN_KEEP_OR_REPLACE_FOCUS
         return build_response({}, build_speechlet_response(
             output=speech_output))
     else:
-        speech_output = "Sorry, I'm not sure about that."
+        speech_output = "Sorry, I'm not sure how to interpret that."
         return build_response({}, build_speechlet_response(
             output=speech_output))
 
@@ -509,9 +670,11 @@ def handle_no_intent(intent, session, state):
         return build_response({}, build_speechlet_response(
             output=speech_output))
     else:
-        speech_output = "Sorry, I'm not sure about that."
+        speech_output = "Sorry, I'm not sure how to interpret that."
         return build_response({}, build_speechlet_response(
             output=speech_output))
+
+# TODO: fix implementations of builtin intents like stop/cancel/help
 
 # --------------- Events ------------------
 
@@ -529,9 +692,15 @@ def on_launch(launch_request, session, state):
 
     print("on_launch "+str(launch_request)+" "+str(session)+" requestId=" + launch_request['requestId'] +
           ", sessionId=" + session['sessionId'])
+
+    # If new user, prompt to set up first
+    userId = session["user"]["userId"]
+    if len(get_info(userId)) == 0:
+        return new_user_intro(session, state)          
+
     # Dispatch to your skill's launch
     
-    # Get user time from API
+    # TODO: Get user time from API
     
     ########################################
     ########################################
@@ -550,59 +719,38 @@ def on_intent(intent_request, session, state):
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
     
+    
+    # If new user, and intent is not setting up, prompt to set up first
+    userId = session["user"]["userId"]
+    if len(get_info(userId)) == 0 and intent_name != "NewUserCollectInfoIntent":
+        return new_user_intro(session, state)
+
+    # TODO: allow user to change name?
+    
     handlers = {
         "GetMainFocusIntent": get_main_focus_intent_response,
         "CheckinKeepMainFocusIntent": keep_main_focus_intent,
         "CheckinReplaceMainFocusIntent": replace_main_focus_intent,
-        "SetMorningRoutineIntent": set_morning_routine_intent,
-        "SetEveningRoutineIntent": set_evening_routine_intent,
         "AMAZON.YesIntent": handle_yes_intent,
         "AMAZON.NoIntent": handle_no_intent,
         "AMAZON.CancelIntent": handle_session_end_request,
         "AMAZON.StopIntent": handle_session_end_request,
     }
     
+    # Handlers that need more arguments
+    if intent_name not in handlers:
+        if intent_name == "SetMorningRoutineIntent":
+            return set_routine_intent(intent, session, state, MORNING)
+        elif intent_name == "SetEveningRoutineIntent":
+            return set_routine_intent(intent, session, state, EVENING)
+        elif intent_name == "NewUserCollectInfoIntent":
+            return new_user_collect_info_intent(intent_request, session, state)
     try:
         return handlers[intent_name](intent, session, state)
     except Exception as e:
         # This exception probably came from inside a handler
         print(e)
         raise ValueError("Invalid intent: "+intent_name)
-    
-    
-    
-    ######################
-    # Dispatch to your skill's intent handlers
-    # if intent_name == "MyColorIsIntent":
-    #     return set_color_in_session(intent, session)
-    # elif intent_name == "WhatsMyColorIntent":
-    #     return get_color_from_session(intent, session)
-    if intent_name == "GetMainFocusIntent":
-        return get_main_focus_intent_response(intent, session)
-    # elif intent_name == "AddReminderIntent":
-    #     return add_reminder_intent_response(intent, session)
-    elif intent_name == "ExecuteEveningRoutineIntent":
-        return execute_evening_routine_intent(session, state)
-    # elif intent_name == "CheckinRefreshPrioritiesIntent":
-    #     return refresh_priorities_intent(intent, session)
-    # elif intent_name == "CheckinRefreshRemindersIntent":
-    #     return refresh_reminders_intent(intent, session)
-    elif intent_name == "CheckinKeepMainFocusIntent":
-        return keep_main_focus_intent(intent, session)
-    elif intent_name == "CheckinReplaceMainFocusIntent":
-        return replace_main_focus_intent(intent, session)
-    elif intent_name == "AMAZON.YesIntent":
-        return handle_yes_intent(intent, session)
-    elif intent_name == "AMAZON.NoIntent":
-        return handle_no_intent(intent, session)
-    elif intent_name == "AMAZON.HelpIntent":
-        # return get_welcome_response()
-        return get_help_response(intent, session)
-    elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
-        return handle_session_end_request()
-    else:
-        raise ValueError("Invalid intent: " + intent_name)
-
 
 def on_session_ended(session_ended_request, session):
     """ Called when the user ends the session.
