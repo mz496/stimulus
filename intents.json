@@ -49,10 +49,8 @@
                     "name": "GetEveningRoutineIntent",
                     "slots": [],
                     "samples": [
-                        "what's my bedtime routine",
-                        "what's my night routine",
-                        "what's my end of day routine",
                         "what's my nighttime routine",
+                        "what's my bedtime routine",
                         "what's my evening routine",
                         "what's my afternoon routine",
                         "what does my bedtime routine look like",
@@ -60,8 +58,7 @@
                         "what does my end of day routine look like",
                         "what does my nighttime routine look like",
                         "what does my evening routine look like",
-                        "what does my afternoon routine look like",
-                        "what does my evening look like"
+                        "what does my afternoon routine look like"
                     ]
                 },
                 {
@@ -153,9 +150,7 @@
                             "name": "initialMainFocus",
                             "type": "AMAZON.EventType",
                             "samples": [
-                                "my focus is {initialMainFocus}",
-                                "{initialMainFocus}",
-                                "my main focus is {initialMainFocus}"
+                                "{initialMainFocus}"
                             ]
                         }
                     ],
@@ -233,10 +228,6 @@
                             "name": "newMainFocus",
                             "type": "AMAZON.EventType",
                             "samples": [
-                                "my new focus is {newMainFocus}",
-                                "my new main focus is {newMainFocus}",
-                                "my main focus is {newMainFocus}",
-                                "my focus is {newMainFocus}",
                                 "{newMainFocus}"
                             ]
                         }
@@ -555,6 +546,14 @@
             {
                 "id": "Elicit.Slot.364487685416.1431036788818",
                 "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What's your new main focus?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "What's your main focus for tomorrow?"
+                    },
                     {
                         "type": "PlainText",
                         "value": "What's your new main focus for tomorrow?"
