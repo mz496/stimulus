@@ -1,0 +1,183 @@
+<speak>
+    <prosody rate="60%">
+    <prosody volume="x-soft">
+    <prosody pitch="medium">
+        <prosody rate="80%">
+        Get into a comfortable position, either sitting in a chair, or lying on your back.<break time="1s"/>
+        If you are sitting, be sure to keep your feet planted firmly on the floor and your back straight,
+        with your head and shoulders aligned perfectly over your hips.
+        Keep your hands relaxed and resting gently on your thighs.
+        If you are lying down, keep your hands relaxed by your sides.<break time="3s"/>
+        </prosody>
+
+        Pause.<break time="3s"/>
+        Release all the tension in your body.<break time="3s"/>
+        Make sure your shoulders are loose. Let them drop down if you have been unconsciously tensing them.<break time="3s"/>
+        Take a deep breath, and concentrate on the points of contact your body makes with the surface underneath you.<break time="2s"/>
+        I want you to really <emphasis level="strong">feel</emphasis> the gravity connect you to it.<break time="2s"/>
+        Focus your attention on your bodily sensations, and let everything else melt away for now.<break time="10s"/>
+
+        Now, slowly place your hands on your stomach, and take a few deep breaths, noticing your stomach <prosody pitch="medium">rising</prosody> and <prosody pitch="low">falling</prosody> with each in and out breath.<break time="10s"/>
+        And when you feel comfortable, close your eyes.<break time="10s"/>
+
+        Now, <break time=".5s"/>
+        as you keep breathing deeply into your stomach, <break time=".5s"/> 
+        I'd like you to breathe <prosody rate="40%">in</prosody> for a count of 5
+        <amazon:effect name="whispered">
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        </amazon:effect>
+        then <break time=".4s"/>
+        hold your breath for a count of 5
+        <amazon:effect name="whispered">
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        </amazon:effect>
+        and breathe out slowly for a count of 5
+        <amazon:effect name="whispered">
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        </amazon:effect>
+        
+        
+        
+        
+        and keep breathing. in, for 5
+        <amazon:effect name="whispered">
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        </amazon:effect>
+        and hold, for 5
+        <amazon:effect name="whispered">
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        </amazon:effect>
+        out, for 5
+        <amazon:effect name="whispered">
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        </amazon:effect>
+        
+        
+
+        <amazon:effect name="whispered">
+        in, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        and hold, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        out, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        
+        
+
+        in, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        and hold, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        out, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+
+
+
+        in, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        and hold, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        out, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+
+
+
+        One more time. in, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        and hold, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        out, for 5
+        <break time=".8s"/>4
+        <break time=".8s"/>3
+        <break time=".8s"/>2
+        <break time=".8s"/>1
+        <break time=".8s"/>
+        </amazon:effect>
+
+        <break time="2s"/>
+        <amazon:effect name="whispered">Good.</amazon:effect><break time="3s"/>
+        I'd like you to now slowly bring your attention back to the room,<break time=".4s"/>
+        keeping your eyes closed,<break time=".4s"/>
+        notice the sounds around you.<break time="10s"/>
+        Maybe it's the hum of vehicles.<break time="1s"/>
+        Animals outside.<break time="1s"/>
+        Other people.<break time="1s"/>
+        Or maybe it's just you,<break time=".4s"/>
+        and the steady hum of electronics and devices near you.<break time="10s"/>
+        When the world moves a little too fast,<break time=".4s"/>
+        remember to take a break.<break time="1s"/>
+        Return to your breathing.<break time="10s"/>
+        Slowly begin to open your eyes.<break time="3s"/>
+        I hope that was refreshing.<break time="3s"/>
+    </prosody>
+    </prosody>
+    </prosody>
+</speak>
