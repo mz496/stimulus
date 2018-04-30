@@ -81,12 +81,12 @@ def build_speechlet_response(output=None, title=None, reprompt_text=None, should
         if output.strip()[:7] == "<speak>":
             result["outputSpeech"] = {
                 'type': 'SSML',
-                'ssml': output
+                'ssml': compress_string(output).strip()
             }
         else:
             result["outputSpeech"] = {
                 'type': 'PlainText',
-                'text': output
+                'text': compress_string(output).strip()
             }
         
     result["shouldEndSession"] = should_end_session
@@ -342,6 +342,10 @@ def get_DB_key_name(slot_name):
     else:
         return translation[slot_name]
 
+# Convert multiple whitespaces to a single whitespace
+def compress_string(s):
+    return ' '.join(s.split())
+
 
 #===================================
 # New user
@@ -413,7 +417,7 @@ def get_remaining_activities_long_text(partial, full, time_of_day):
     diff_reprs = [INFINITIVE_REPRS[time_of_day][activity] for activity in diff]
     if len(diff) >= 3:
         return """<speak>
-            {3}What do you want to do <say-as interpret-as="ordinal">{0}</say-as>{2}? You can {1}.
+            {3}Which would you like to do <say-as interpret-as="ordinal">{0}</say-as>{2}? You can {1}.
             </speak>""".format(
                 str(len(partial)+1),
                 sequentialize(diff_reprs, last_joiner="or"),
@@ -422,7 +426,7 @@ def get_remaining_activities_long_text(partial, full, time_of_day):
             )
     elif len(diff) == 2: # TODO: make this not affirmative if we failed to fill this slot
         return """<speak>
-            Sure thing. Do you want to {0} or {1} <say-as interpret-as="ordinal">{2}</say-as>, or is that all?
+            Sure thing. You can {0} or {1} <say-as interpret-as="ordinal">{2}</say-as>. Which would you like to do, or is that all?
             </speak>""".format(
                 diff_reprs[0], diff_reprs[1], str(len(partial)+1))
         # Let's assume we will always have at least 2 activities for each time of day, so we know the user can't end early here
@@ -434,8 +438,8 @@ def get_remaining_activities_long_text(partial, full, time_of_day):
         # Bad things happen if we get here
         return None
         
-def get_final_set_routine_text(time_of_day):
-    short_reprs = [GERUND_REPRS[time_of_day][activity] for activity in DEFAULT_ORDERS[time_of_day]]
+def get_final_set_routine_text(just_set_order,time_of_day):
+    short_reprs = [GERUND_REPRS[time_of_day][activity] for activity in just_set_order]
     if len(short_reprs) == 1:
         return "Okay, sounds good. I've updated your {0} routine to include just {1}.".format(
             time_of_day.lower(),
@@ -462,16 +466,21 @@ def set_routine_intent(intent, session, state, time_of_day):
         resolution = intent["slots"][slots[curr_index]]["resolutions"]["resolutionsPerAuthority"][0]
         if resolution["status"]["code"] == "ER_SUCCESS_MATCH":
             activity = resolution["values"][0]["value"]["name"].upper()
+            print("UPON MATCH: ",curr_index,state["set_order_partial"])
             
             # Stop if we exhausted everything, or            
             # Stop if last response was DONE and we have at least one thing
-            if curr_index == len(INFINITIVE_REPRS[time_of_day].keys()) or activity == DONE and curr_index > 0:
+            if curr_index == len(INFINITIVE_REPRS[time_of_day].keys())-1 or activity == DONE and curr_index > 0:
                 # DEFAULT_ORDERS[time_of_day] = state["set_order_partial"]
+                # Add it to the list if it's not a (premature) DONE
+                if activity != DONE:
+                    state["set_order_partial"] += [activity]
+                
                 add_info({
                     "userId": session["user"]["userId"],
                     get_routine_DB_key_name(time_of_day): state["set_order_partial"]
                 })
-                speech_output = get_final_set_routine_text(time_of_day)
+                speech_output = get_final_set_routine_text(state["set_order_partial"],time_of_day)
                 # speech_output = "Okay, sounds good. I've updated your morning routine to " + (",".join([a.lower() for a in MORNING_ORDER]))
                 
                 state["set_routine_elicit_index"] = 0
@@ -483,6 +492,7 @@ def set_routine_intent(intent, session, state, time_of_day):
             # If last response was DONE at the beginning, do nothing
             # Otherwise, proceed with gathering the rest
             if not (activity == DONE and curr_index == 0):
+                # intent["slots"][slots[curr_index]]["confirmationStatus"] = "CONFIRMED"   
                 state["set_routine_elicit_index"] += 1
                 curr_index = state["set_routine_elicit_index"]
                 # Values in JSON schema must match constants for activities in lambda function
@@ -502,11 +512,15 @@ def set_routine_intent(intent, session, state, time_of_day):
 # Morning routine parts
 
 def get_morning_meditation_script():
-    speech_output = "Here is some meditation."
+    speech_output = None
+    with open("meditation.txt") as f:
+        speech_output = "".join(f.readlines())
     return speech_output
 
 def get_morning_stretching_script():
-    speech_output = "Here is some stretching."
+    speech_output = None
+    with open("stretches.txt") as f:
+        speech_output = "".join(f.readlines())
     return speech_output
     
 def get_morning_priorities_script(userId):
@@ -582,7 +596,10 @@ def execute_morning_routine_intent(intent, session, state):
     # Build morning routine
     user_info = get_info(session["user"]["userId"])[0]
     morning_order = user_info["morningRoutine"]
-    state["morning_routine"] = routineTexts[morning_order[0]]
+    
+    # Introduce the first activity
+    state["morning_routine"] = concatTexts(get_activity_intro().format(GERUND_REPRS[MORNING][morning_order[0]]), routineTexts[morning_order[0]])
+    # Glue together the rest with transitions
     for activity in morning_order[1:]:
         state["morning_routine"] = concatTexts(state["morning_routine"],concatTexts(transitions[activity],routineTexts[activity]))
         
@@ -597,47 +614,58 @@ def get_evening_reflection_script(): # TODO: make this different if you had a ba
     speech_output = \
     """<speak>
         Think about something that happened today that you’re grateful for.
-    </speak>"""
-    
-    
-    """<audio src="https://s3.amazonaws.com/stimulus-assets/brownnoise_30.mp3" />
+        <audio src="https://s3.amazonaws.com/stimulus-assets/brownnoise_30.mp3" />
         Think about something that could have gone better today, and then think about how you could learn from that experience.
         <audio src="https://s3.amazonaws.com/stimulus-assets/brownnoise_30.mp3" />
         Think about how you helped others feel good today, and how you can keep considering them in the future.
         <audio src="https://s3.amazonaws.com/stimulus-assets/brownnoise_30.mp3" />
         <prosody rate="80%">Good</prosody>
         <prosody rate="70%">work.</prosody>
+        <break time="3s"/>
     </speak>"""
     return speech_output
     
 def get_evening_meditation_script():
-    speech_output = "This is some meditation."
+    speech_output = None
+    with open("meditation.txt") as f:
+        speech_output = "".join(f.readlines())
     return speech_output
     
 def get_evening_priorities_script():
-    return "Did you make progress on your main focus today?"
+    choices = [
+        "Did you make progress on it today?",
+        "Did you work toward it well today?",
+        "Did your main focus go well today?"
+    ]
+    return random.choice(choices)
     
 def get_transition_into_reflection_script():
+    break_time = "<break time='1s'/>"
+    prepositions = ["Now", "Next", "Moving on", "Next up"]
     choices = [
-        "<break time='.5s'/>Now let's do some reflection on how your day went.",
-        "<break time='.5s'/>Now let's reflect on how your day went.",
-        "<break time='.5s'/>Now let's reconsider some parts of your day.",
+        "let's do some reflection on how your day went.",
+        "let's reflect on how your day went.",
+        "let's reconsider some parts of your day.",
     ]
-    return random.choice(choices)
+    return "{0} {1}, {2}".format(break_time, random.choice(prepositions), random.choice(choices))
 def get_transition_into_meditation_script():
+    break_time = "<break time='1s'/>"
+    prepositions = ["Now", "Next", "Moving on", "Next up"]
     choices = [
-        "<break time='.5s'/>Now let's clear your mind for some meditation.",
-        "<break time='.5s'/>Now let's spend a few minutes in meditation.",
-        "<break time='.5s'/>Now let's find peace with some meditation.",
+        "let's clear your mind for some meditation.",
+        "let's spend a few minutes in meditation.",
+        "let's find peace with some meditation.",
     ]
-    return random.choice(choices)
+    return "{0} {1}, {2}".format(break_time, random.choice(prepositions), random.choice(choices))
 def get_transition_into_evening_priorities_script():
+    break_time = "<break time='1s'/>"
+    prepositions = ["Now", "Next", "Moving on", "Next up"]
     choices = [
-        "<break time='.5s'/>Now let's review your priorities for the past day.",
-        "<break time='.5s'/>Now let's walk through your priorities for the past day.",
-        "<break time='.5s'/>Now let's go over your priorities for the past day.",
+        "let's review your priorities for the past day.",
+        "let's walk through your priorities for the past day.",
+        "let's go over your priorities for the past day.",
     ]
-    return random.choice(choices)
+    return "{0} {1}, {2}".format(break_time, random.choice(prepositions), random.choice(choices))
 
 def get_evening_routine_intro():
     choices = [
@@ -659,6 +687,14 @@ def get_evening_routine_outro():
         "Sleep well tonight, and let's meet up again in the morning."
     ]
     return "{0} {1}".format(random.choice(choices1), random.choice(choices2))
+    
+def get_activity_intro():
+    choices = [
+        "First up is {0}.",
+        "Let's start off with {0}.",
+        "Let's start with {0}."
+    ]
+    return random.choice(choices)
 
 #========================
 # Evening routine methods
@@ -691,12 +727,13 @@ def execute_evening_routine_intent(intent, session, state):
     user_info = get_info(session["user"]["userId"])[0]
     stored_evening_order = user_info["eveningRoutine"]
     first_name = user_info["firstName"]
-    # print(stored_evening_order)
-    
+
     try:
         prioritiesIndex = stored_evening_order.index(PRIORITIES)
     except:
-        state["evening_routine_after_priorities"] = routineTexts[stored_evening_order[0]]
+        # Introduce the first activity
+        state["evening_routine_after_priorities"] = concatTexts(get_activity_intro().format(GERUND_REPRS[EVENING][stored_evening_order[0]]), routineTexts[stored_evening_order[0]])
+        # Glue together the other activites with transitions
         for activity in stored_evening_order[1:]:
             state["evening_routine_after_priorities"] = \
             concatTexts(state["evening_routine_after_priorities"],concatTexts(transitions[activity],routineTexts[activity]))
@@ -704,25 +741,21 @@ def execute_evening_routine_intent(intent, session, state):
         return get_ending_evening_routine(intro, state)
     else:
         # Build everything up to and including the priorities question
-        state["evening_routine_before_priorities"] = routineTexts[stored_evening_order[0]]
-        for i in range(prioritiesIndex+1):
+        state["evening_routine_before_priorities"] = concatTexts(get_activity_intro().format(GERUND_REPRS[EVENING][stored_evening_order[0]]), routineTexts[stored_evening_order[0]])
+        for i in range(1,prioritiesIndex+1):
             activity = stored_evening_order[i]
             state["evening_routine_before_priorities"] = \
             concatTexts(state["evening_routine_before_priorities"],concatTexts(transitions[activity],routineTexts[activity]))
             
-        # print("BEFORE: "+state["evening_routine_before_priorities"])
+        print("BEFORE: ",state["evening_routine_before_priorities"])
         # Build everything after the priorities question
         for i in range(prioritiesIndex+1,len(stored_evening_order)):
             activity = stored_evening_order[i]
             state["evening_routine_after_priorities"] = \
             concatTexts(state["evening_routine_after_priorities"],concatTexts(transitions[activity],routineTexts[activity]))
-        # print("AFTER: "+state["evening_routine_after_priorities"])
+        print("AFTER: ",state["evening_routine_after_priorities"])
             
         state["question"] = CHECKIN_REFRESH_PRIORITIES
-        # print(build_response({}, 
-        # build_speechlet_response(output=speech_output)))
-        # return build_response({}, 
-        # build_speechlet_response(output=speech_output))
         return get_beginning_evening_routine(user_info["firstName"], state)
 
 

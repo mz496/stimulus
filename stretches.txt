@@ -1,99 +1,39 @@
 <speak>
-We've got seven nice relaxing stretches to cover, perfect for those stiff morning joints. Before we start, you're going to want to have a wall nearby for balance, and a chair or other short object like your bed handy.<break time="2s"/>
+We've got four nice relaxing stretches to cover, perfect for those stiff morning joints. Before we start, have a short object like a chair or your bed handy.<break time="2s"/>
 
 Our first stretch is the Upper Back Release.<break time="1s"/>
  
 Stand with your feet at a hip-distance apart.<break time="2s"/>
 Clasp your hands in front of you and round your upper back by pushing them forward, keeping your arms straight.<break time="3s"/>
-You should feel the stretch in your upper back and the back of your shoulders.<break time="2s"/>
+This stretches your upper back and the back of your shoulders.<break time="2s"/>
 Hold this for 2-3 deep breaths.<break time="10s"/><break time="5s"/>
 
-
-
- 
-
-
-
-
-
-
-The second stretch is the Chest Release.<break time="1s"/>
- 
-Hold onto a wall with your left arm and keep it there.<break time="3s"/>
-Now, step forward with your left leg.<break time="3s"/>
-Next, turn your entire body to the right, especially at the hips.<break time="3s"/>
-You should feel the stretch in your chest, the front of your shoulders, and your biceps. Hold that for 4-6 deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
-
-Now, repeat on the other side for 4-6 more deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
- 
-
-
-
-
-
-
-
-The third stretch is the Side Stretch.<break time="1s"/>
- 
-Stand with your right hand on something for balance.<break time="3s"/>
-Now, cross your left leg in front of your right leg, with your toes pointing forward.<break time="3s"/>
-Shift your weight onto your left leg.<break time="2s"/>
-Next, reach your left arm up and over your head to the right, creating a long line from the left ankle to the left fingertips.<break time="3s"/>
-You should feel the stretch in your left thigh, left side abs, and left shoulder. Hold this for 2-3 deep breaths.<break time="10s"/><break time="5s"/>
-
-All right, repeat on the other side for 2-3 more deep breaths.<break time="10s"/><break time="5s"/>
-
-
-
-
-
-
-Our fourth stretch is the Seated Spinal Twist.<break time="1s"/>
+Our second stretch is the Seated Spinal Twist.<break time="1s"/>
 
 Sit on a chair or the edge of your bed with your legs together.<break time="2s"/>
 Twist your upper body to the left from the waist.<break time="3s"/>
 Put your left hand behind you and your right hand on your outer left thigh for support, and hold that twist.<break time="3s"/>
-You can also look over your shoulder to the left for a neck stretch.<break time="2s"/>
-You should feel the stretch in your spine and shoulders. Hold this for 2-3 deep breaths.<break time="10s"/><break time="5s"/>
+This stretches your spine and shoulders. Hold this for 2-3 deep breaths.<break time="10s"/><break time="5s"/>
 
 You know the drill, repeat on the other side for 2-3 more deep breaths.<break time="10s"/><break time="5s"/>
 
-
-
- 
-The fifth stretch is the Standing Hamstring Stretch.<break time="1s"/>
+The third stretch is the Standing Hamstring Stretch.<break time="1s"/>
 
 Stand in front of a step or bench, and hold on to something for balance if needed.<break time="2s"/>
 Bring your right leg up in front of you onto it, keeping it straight.<break time="3s"/>
 Keep your legs parallel and at a hip-distance apart. If you want to make it more intense, lean forward with a straight spine using your hips.<break time="3s"/>
-You should feel this stretch in the hamstrings, or the back of your thighs. Hold that for 4-6 deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
+This stretches your hamstrings. Hold that for 4-6 deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
 
 Of course, repeat on the other side for 4-6 more deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
-
-
-
-
  
-The sixth stretch we have is the Standing Quad Stretch.<break time="1s"/>
+The fourth stretch we have is the Standing Quad Stretch.<break time="1s"/>
  
 Stand with your feet at a hip-distance apart, and hold on to something for balance if needed.<break time="2s"/>
 While keeping your spine straight, lift your right foot back and grasp it with your right hand.<break time="3s"/>
 Make sure your spine and left leg are as vertical as possible, and your right knee is pointing to the ground.<break time="3s"/>
-You should feel this stretch in your quads, or the front of your thighs. Hold this for 4-6 deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
+This strethces your quads. Hold this for 4-6 deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
 
 Repeat this on the other side for 4-6 more deep breaths.<break time="10s"/><break time="10s"/><break time="10s"/>
  
-
-
-
-
-Our seventh and last stretch is the Standing Forward Bend.<break time="1s"/>
- 
-Stand with your feet at a hip-distance apart.<break time="2s"/>
-Now bend your knees a little bit, and lean forward at the hips.<break time="3s"/>
-Keep leaning forward until your upper body hangs over your legs, and hold your elbows with your hands.<break time="3s"/>
-Put your hands on the floor or on your legs if you need to.<break time="3s"/>
-You should feel this stretch in your hamstrings and lower back. Hold this for 2-3 deep breaths while you very gently shake your head no and nod your head yes.<break time="10s"/><break time="5s"/>
-
-After this, come back up slowly. Great job!
+Great job with the morning stretches today!
 </speak>
