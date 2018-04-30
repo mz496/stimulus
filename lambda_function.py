@@ -1,48 +1,12 @@
-"""
-This sample demonstrates a simple skill built with the Amazon Alexa Skills Kit.
-The Intent Schema, Custom Slots, and Sample Utterances for this skill, as well
-as testing instructions are located at http://amzn.to/1LzFrj6
-
-For additional samples, visit the Alexa Skills Kit Getting Started guide at
-http://amzn.to/1LGWsLG
-"""
-
-# from __future__ import print_function
-
 import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 import json
+import random
 
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('StimulusSkillDB')
-
-# def get_names(userID):
-#     names = ""
-
-#     response = table.query(
-#         KeyConditionExpression=Key('UserID').eq(userID)
-#     )
-
-#     nameCount = len(response['Items'])
-#     for idx, item in enumerate(response['Items']):
-#         names += item['Name']
-#         if idx == nameCount - 2:
-#             names += " and "
-#         elif idx != nameCount - 1:
-#             names += ", "
-
-#     return names, nameCount
-
-# def get_name_list(userID):
-#     names, number = get_names(userID)
-#     if number == 0:
-#         return "There is no-one here in the house."
-#     elif number == 1:
-#         return names + " is the only person here in the house."
-#     else:
-#         return names + " are here in the house."
         
 def get_info(userId):
     response = table.query(
@@ -106,12 +70,6 @@ def delete_info(userId):
         return e.response['Error']['Code']        
 
     return None
-
-def serialize_list(L):
-    return ",".join(L)
-def deserialize_list(s):
-    return s.split(",")
-
 
 
 
@@ -236,7 +194,7 @@ ACTIVITY_SLOTS = {
 }
 
 # Default values
-ORDERS = {
+DEFAULT_ORDERS = {
     MORNING: [STRETCHING,MEDITATION,PRIORITIES],
     EVENING: [PRIORITIES,REFLECTION,MEDITATION]
 }
@@ -305,19 +263,41 @@ def get_main_focus_intent_response(intent, session, state):
     mainFocus = get_info(session["user"]["userId"])[0]["mainFocus"]
     speech_output = "Your main focus for today is {0}.".format(mainFocus)
     return build_response({}, build_speechlet_response(
-        output=speech_output))
+        output=speech_output, should_end_session=True))
         
     # TODO: make sure this is robust against if there is no main focus i.e. firstrun
     # TODO: show this on the screen?
     
-def get_morning_routine_intent(intent, session, state):
-    pass
-    
-def get_evening_routine_intent(intent, session, state):
-    pass
+def get_routine_intent(intent, session, state, time_of_day):
+    routine = get_info(session["user"]["userId"])[0][get_routine_DB_key_name(time_of_day)]
+    activities_string = sequentialize([GERUND_REPRS[MORNING][activity] for activity in routine])
+    if len(routine) >= 2:
+        speech_output = "Your {1} routine includes {0}, in that order.".format(
+            activities_string,
+            time_of_day.lower())
+    else:
+        speech_output = "Your {1} routine is just {0}.".format(
+            activities_string,
+            time_of_day.lower())
+    return build_response({}, build_speechlet_response(
+        output=speech_output, should_end_session=True))
 
-def set_name_intent(intent, session, state):
-    pass
+def set_name_intent(intent_request, session, state):
+    if intent_request["dialogState"] == "COMPLETED":
+        speech_output = "Okay. I'll call you {0} from now on.".format(
+            get_info(session["user"]["userId"])[0]["firstName"])
+    
+        return build_response({}, build_speechlet_response(
+            output=speech_output, should_end_session=True))
+    else:
+        slot_info = intent_request["intent"]["slots"]["newFirstName"]
+        
+        if slot_info["confirmationStatus"] == "CONFIRMED":
+            add_info({
+                "userId": session["user"]["userId"],
+                "firstName": slot_info["value"]
+            })
+        return build_response({}, build_delegate_response())
 
 #================================
 # Helpers
@@ -376,8 +356,8 @@ def new_user_intro(session, state):
 
 def new_user_collect_info_intent(intent_request, session, state):
     if intent_request["dialogState"] == "COMPLETED":
-        morning_default_activities_string = sequentialize([GERUND_REPRS[MORNING][activity] for activity in ORDERS[MORNING]])
-        evening_default_activities_string = sequentialize([GERUND_REPRS[EVENING][activity] for activity in ORDERS[EVENING]])
+        morning_default_activities_string = sequentialize([GERUND_REPRS[MORNING][activity] for activity in DEFAULT_ORDERS[MORNING]])
+        evening_default_activities_string = sequentialize([GERUND_REPRS[EVENING][activity] for activity in DEFAULT_ORDERS[EVENING]])
         speech_output = "Great. Start off your morning with me and I'll guide you through {0}.\
         Check back with me in the evening and I'll guide you through {1}.\
         Let me know if you want to change your routines, change your name, or get a reminder of your main focus.".format(
@@ -385,8 +365,8 @@ def new_user_collect_info_intent(intent_request, session, state):
             
         initial_DB_write = {
             "userId": session["user"]["userId"],
-            get_routine_DB_key_name(MORNING): ORDERS[MORNING],
-            get_routine_DB_key_name(EVENING): ORDERS[EVENING]
+            get_routine_DB_key_name(MORNING): DEFAULT_ORDERS[MORNING],
+            get_routine_DB_key_name(EVENING): DEFAULT_ORDERS[EVENING]
         }
         for key in state["initial_DB_write"]:
             initial_DB_write[key] = state["initial_DB_write"][key]
@@ -413,7 +393,7 @@ def existing_user_intro(session, state):
     user_info = get_info(session["user"]["userId"])[0]
     speech_output = "Welcome back, {0}! \
     To start your morning, ask Stimulus to start your day. \
-    To finish your evening, tell Stimulus to ask about your day.".format(
+    To finish your evening, tell Stimulus to ask how your day went.".format(
         user_info["firstName"], user_info["mainFocus"])
     
     return build_response({}, build_speechlet_response(
@@ -437,7 +417,7 @@ def get_remaining_activities_long_text(partial, full, time_of_day):
                 sequentialize(diff_reprs, last_joiner="or"),
                 ", or is that all" if len(partial) > 0 else "", # Cases for empty/nonempty partial list
                 "Okay. " if len(partial) > 0 else ""
-                )
+            )
     elif len(diff) == 2: # TODO: make this not affirmative if we failed to fill this slot
         return """<speak>
             Sure thing. Do you want to {0} or {1} <say-as interpret-as="ordinal">{2}</say-as>, or is that all?
@@ -453,7 +433,7 @@ def get_remaining_activities_long_text(partial, full, time_of_day):
         return None
         
 def get_final_set_routine_text(time_of_day):
-    short_reprs = [GERUND_REPRS[time_of_day][activity] for activity in ORDERS[time_of_day]]
+    short_reprs = [GERUND_REPRS[time_of_day][activity] for activity in DEFAULT_ORDERS[time_of_day]]
     if len(short_reprs) == 1:
         return "Okay, sounds good. I've updated your {0} routine to include just {1}.".format(
             time_of_day.lower(),
@@ -484,10 +464,10 @@ def set_routine_intent(intent, session, state, time_of_day):
             # Stop if we exhausted everything, or            
             # Stop if last response was DONE and we have at least one thing
             if curr_index == len(INFINITIVE_REPRS[time_of_day].keys()) or activity == DONE and curr_index > 0:
-                ORDERS[time_of_day] = state["set_order_partial"]
+                # DEFAULT_ORDERS[time_of_day] = state["set_order_partial"]
                 add_info({
                     "userId": session["user"]["userId"],
-                    get_routine_DB_key_name(time_of_day): ORDERS[time_of_day]
+                    get_routine_DB_key_name(time_of_day): state["set_order_partial"]
                 })
                 speech_output = get_final_set_routine_text(time_of_day)
                 # speech_output = "Okay, sounds good. I've updated your morning routine to " + (",".join([a.lower() for a in MORNING_ORDER]))
@@ -536,9 +516,33 @@ def get_morning_priorities_script(userId):
 #========================
 # Morning routine methods
 
-def get_morning_routine(state):
-    intro = "Good morning!" # TODO: add name here?
-    outro = "All right, we're ready to start the day! I'll catch up with you in the evening."
+def get_morning_routine_intro():
+    choices = [
+        "Good morning, {0}!",
+        "Rise and shine, {0}!",
+    ]
+    return random.choice(choices)
+def get_morning_routine_outro():
+    choices1 = [
+        "<say-as interpret-as='interjection'>All righty!</say-as> We're ready to start the day.",
+        "All right, we're ready to start the day!",
+        "Ready to take on the world today?",
+        "Let's go get stuff done!",
+        "Can't wait to hear about what you accomplish today!",
+        "<say-as interpret-as='interjection'>Okey dokey!</say-as> Time to start the day."
+    ]
+    choices2 = [
+        "I'll catch up with you in the evening.",
+        "Talk to you in the evening.",
+        "Have a good one.",
+        "Talk to you later."
+    ]
+    return "{0} {1}".format(random.choice(choices1), random.choice(choices2))
+        
+
+def get_morning_routine_text(first_name, state):
+    intro = get_morning_routine_intro().format(first_name)
+    outro = get_morning_routine_outro()
     speech_output = concatTexts(concatTexts(intro, state["morning_routine"]), outro)
     return build_response({},
     build_speechlet_response(output=speech_output, should_end_session=True))
@@ -554,15 +558,16 @@ def execute_morning_routine_intent(intent, session, state):
     reset_state(state)
     
     # Build morning routine
-    for activity in ORDERS[MORNING]:
+    user_info = get_info(session["user"]["userId"])[0]
+    morning_order = user_info["morningRoutine"]
+    for activity in morning_order:
         state["morning_routine"] = concatTexts(state["morning_routine"],routineTexts[activity])
         
-    return get_morning_routine(state)
+    return get_morning_routine_text(user_info["firstName"], state)
 
 
 
 
-# TODO: this won't trigger from launch intent, need to make a separate evening launch intent
 #=============
 # Evening routine parts
 def get_evening_reflection_script(): # TODO: make this different if you had a bad day?
@@ -596,15 +601,35 @@ def get_evening_priorities_script():
 
 #========================
 # Evening routine methods
+def get_evening_routine_intro():
+    choices = [
+        "Good evening, {0}!",
+    ]
+    return random.choice(choices)
+def get_evening_routine_outro():
+    choices1 = [
+        "We're all done for today.",
+        "That's all for now.",
+        "That's all for today.",
+        "<say-as interpret-as='interjection'>Whew!</say-as> What a long day.",
+        "Another day under the belt."
+    ]    
+    choices2 = [
+        "Get a good night's rest tonight, and I'll catch up with you in the morning!",
+        "Have a good rest tonight, and I'll talk to you in the morning.",
+        "Get some quality sleep tonight, and let's pick things up again in the morning.",
+        "Sleep well tonight, and let's meet up again in the morning."
+    ]
+    return "{0} {1}".format(random.choice(choices1), random.choice(choices2))
 
-def get_beginning_evening_routine(state):
-    intro = "Good evening. "
+def get_beginning_evening_routine(first_name, state):
+    intro = get_evening_routine_intro().format(first_name)
     speech_output = concatTexts(intro, state["evening_routine_before_priorities"])
     return build_response({}, 
     build_speechlet_response(output=speech_output))
 
 def get_ending_evening_routine(prepend, state):
-    outro = "We're all done for today. Get a good night's rest tonight, and I'll catch up with you in the morning!"
+    outro = get_evening_routine_outro()
     speech_output = concatTexts(concatTexts(prepend, state["evening_routine_after_priorities"]), outro)
     return build_response({}, build_speechlet_response(output=speech_output, should_end_session=True))
 
@@ -617,16 +642,18 @@ def execute_evening_routine_intent(intent, session, state):
     # All of these keys must exist in the evening order list
     
     reset_state(state)
-    stored_evening_order = get_info(session["user"]["userId"])[0]["eveningRoutine"]
-    print(stored_evening_order)
+    user_info = get_info(session["user"]["userId"])[0]
+    stored_evening_order = user_info["eveningRoutine"]
+    # print(stored_evening_order)
     
     try:
-        prioritiesIndex = stored_evening_order.index(PRIORITIES) # TODO: what if user doesn't add priorities to routine?
+        prioritiesIndex = stored_evening_order.index(PRIORITIES)
     except:
         for activity in stored_evening_order:
             state["evening_routine_after_priorities"] = \
             concatTexts(state["evening_routine_after_priorities"],routineTexts[activity])
-        return get_ending_evening_routine("", state)
+        intro = get_evening_routine_intro().format(first_name)
+        return get_ending_evening_routine(intro, state)
     else:
         # Build everything up to and including the priorities question
         for i in range(prioritiesIndex+1):
@@ -635,7 +662,7 @@ def execute_evening_routine_intent(intent, session, state):
             
         # print("BEFORE: "+state["evening_routine_before_priorities"])
         # Build everything after the priorities question
-        for i in range(prioritiesIndex+1,len(ORDERS[EVENING])):
+        for i in range(prioritiesIndex+1,len(stored_evening_order)):
             state["evening_routine_after_priorities"] = \
             concatTexts(state["evening_routine_after_priorities"],routineTexts[stored_evening_order[i]])
         # print("AFTER: "+state["evening_routine_after_priorities"])
@@ -645,7 +672,7 @@ def execute_evening_routine_intent(intent, session, state):
         # build_speechlet_response(output=speech_output)))
         # return build_response({}, 
         # build_speechlet_response(output=speech_output))
-        return get_beginning_evening_routine(state)
+        return get_beginning_evening_routine(user_info["firstName"], state)
 
 
 #==================================
@@ -772,9 +799,6 @@ def on_intent(intent_request, session, state):
 
     handlers = {
         "GetMainFocusIntent": get_main_focus_intent_response,
-        "GetMorningRoutineIntent": get_morning_routine_intent,
-        "GetEveningRoutineIntent": get_evening_routine_intent,
-        "SetNameIntent": set_name_intent,
         "CheckinKeepMainFocusIntent": keep_main_focus_intent,
         "CheckinReplaceMainFocusIntent": replace_main_focus_intent,
         "ExecuteMorningRoutineIntent": execute_morning_routine_intent,
@@ -791,8 +815,15 @@ def on_intent(intent_request, session, state):
             return set_routine_intent(intent, session, state, MORNING)
         elif intent_name == "SetEveningRoutineIntent":
             return set_routine_intent(intent, session, state, EVENING)
+        elif intent_name == "GetMorningRoutineIntent":
+            return get_routine_intent(intent, session, state, MORNING)
+        elif intent_name == "GetEveningRoutineIntent":
+            return get_routine_intent(intent, session, state, EVENING)
         elif intent_name == "NewUserCollectInfoIntent":
             return new_user_collect_info_intent(intent_request, session, state)
+        elif intent_name == "SetNameIntent":
+            return set_name_intent(intent_request, session, state)
+            
     try:
         return handlers[intent_name](intent, session, state)
     except Exception as e:
